@@ -1,3 +1,8 @@
+1.2 Released May 15, 2002
+
+- New files polyexp.m, polyexp_solve_systems.c, and
+  polyexp_solve_systems.m, implementing polynomial convolution.
+
 1.1 Released August 21, 2001
 
 - New files normconv.c and normconv.m, implementing normalized
