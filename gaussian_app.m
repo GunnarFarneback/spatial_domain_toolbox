@@ -23,6 +23,11 @@ elseif mod(side,2) ~= 1
     error('side should be an odd integer.')
 end
 
+if side == 1
+    a = 1;
+    return
+end
+
 n = (side-1)/2;
 I = (-n:n)';
 switch dims
@@ -45,4 +50,8 @@ if nargin < 3
     sigma = n/sqrt(-2*log(delta));
 end
 
-a = exp(-r.^2/(2*sigma^2));
+if sigma ~= 0
+    a = exp(-r.^2/(2*sigma^2));
+else
+    a = double(r == 0);
+end
