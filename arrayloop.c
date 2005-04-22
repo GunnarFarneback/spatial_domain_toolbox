@@ -13,8 +13,7 @@
  *         gf@isy.liu.se
  */
 
-void
-mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     int N;
     int k, r;
@@ -59,7 +58,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     for (k = 1; k < nrhs && !mxIsChar(prhs[k]); k++)
     {
 	int n;
-	if (!mxIsNumeric(prhs[k])
+	if (!mxIsNumeric(prhs[k]) || mxIsComplex(prhs[k])
 	    || mxIsSparse(prhs[k]) || !mxIsDouble(prhs[k]))
 	{
 	    mexPrintf("Expected array for argument %d.", k + 1);
@@ -73,8 +72,8 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    mexErrMsgTxt("");
 	}
 	
-	if (n > max_number_of_dimensions)
-	    n = max_number_of_dimensions;
+	if (max_number_of_dimensions < n)
+	    max_number_of_dimensions = n;
 	
 	for (r = 0; r < N; r++)
 	{
@@ -125,18 +124,19 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	nlhs = 1;
     
     /* Create some auxiliary arrays. */
-    number_of_elements = mxCalloc(N, sizeof(int));
+    number_of_elements = mxCalloc(number_of_arrays,
+				  sizeof(*number_of_elements));
     if (number_of_elements == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
 
-    number_of_elements2 = mxCalloc(nlhs, sizeof(int));
+    number_of_elements2 = mxCalloc(nlhs, sizeof(*number_of_elements2));
     if (number_of_elements2 == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
     
     
     /* Create array of input arrays for the callback. */
     input_arrays = mxCalloc(number_of_arrays + number_of_extra_parameters,
-			    sizeof(mxArray *));
+			    sizeof(*input_arrays));
     if (input_arrays == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
 
@@ -145,7 +145,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (max_number_of_dimensions < 2)
 	max_number_of_dimensions = 2;
     
-    dims = mxCalloc(max_number_of_dimensions, sizeof(int));
+    dims = mxCalloc(max_number_of_dimensions, sizeof(*dims));
     if (dims == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
 
@@ -176,7 +176,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    (mxArray *) prhs[first_extra_parameter + k];
 
     /* Create array of output arrays for the callback. */
-    output_arrays = mxCalloc(nlhs, sizeof(mxArray *));
+    output_arrays = mxCalloc(nlhs, sizeof(*output_arrays));
     if (output_arrays == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
 
@@ -211,6 +211,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	 */
 	if (x == 0) {
 	    /* Check the maximum number of dimensions. */
+	    max_number_of_dimensions = 0;
 	    for (k = 0; k < nlhs; k++)
 	    {
 		int M = N + mxGetNumberOfDimensions(output_arrays[k]);
@@ -220,7 +221,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	    /* Reallocate dims. */
 	    mxFree(dims);
-	    dims = mxCalloc(max_number_of_dimensions, sizeof(int));
+	    dims = mxCalloc(max_number_of_dimensions, sizeof(*dims));
 	    if (dims == NULL)
 		mexErrMsgTxt("Failed to allocate an array.");
 

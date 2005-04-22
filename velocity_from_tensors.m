@@ -289,4 +289,7 @@ switch model
     if nargout > 1
 	cout = Q(:,:,9,9) + sum(p.*Q(:,:,[1:8],9), 3);
     end
+    
+  otherwise
+    error('invalid motion model')
 end

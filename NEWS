@@ -1,3 +1,7 @@
+2.1
+
+- Bugfix in arrayloop.c
+
 2.0 Released December 17, 2002
 
 - New function arrayloop to speed up certain types of loops (doing the

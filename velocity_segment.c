@@ -8,8 +8,9 @@
 #include "mex.h"
 #include "matrix.h"
 #include <stdlib.h>
-#include <limits.h>
+#include <float.h>
 #include <stdio.h> /* For DumpCandidateHeap */
+#include <string.h>
 
 #define MAX_PARAMS 8
 
@@ -448,7 +449,7 @@ order_candidate_heap(int *heap, int n, struct candidate *candidates)
 {
     int i, j, k;
     int current;
-    for (k = (n+1)/2-1; k--; k>=0)
+    for (k = (n+1)/2-1; k >= 0; k--)
     {
 	current = heap[k];
 	i = k;
@@ -766,7 +767,6 @@ recompute_all_parameters(int *map, struct region *regions, int
 {
     double *Qs;
     int x, y;
-    int i;
     int index;
     int region;
     Qs = mxCalloc((MAX_PARAMS+1) * (MAX_PARAMS+1) * number_of_regions,
@@ -873,26 +873,29 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    if (strcmp(fieldname, "lambda") == 0)
 		lambda = mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "minsize") == 0)
-		minsize = mxGetScalar(fieldvalue);
+		minsize = (int) mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "maxsize") == 0)
-		maxsize = mxGetScalar(fieldvalue);
+		maxsize = (int) mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "kerneldist") == 0)
-		kerneldist = mxGetScalar(fieldvalue);
+		kerneldist = (int) mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "coverage") == 0)
 		coverage = mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "parameter_recomputation") == 0)
-		parameter_recomputation = mxGetScalar(fieldvalue);
+		parameter_recomputation = (int) mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "number_of_initial_iterations") == 0)
-		number_of_initial_iterations = mxGetScalar(fieldvalue);
+		number_of_initial_iterations = (int) mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "motion_models") == 0)
-		motion_models = mxGetScalar(fieldvalue);
+		motion_models = (int) mxGetScalar(fieldvalue);
 	    else if (strcmp(fieldname, "verbose") == 0)
-		verbose = mxGetScalar(fieldvalue);
+		verbose = (int) mxGetScalar(fieldvalue);
 	    else
 	    {
-		char buf[1000];
-		snprintf(buf, 1000, "Unknown option: %s", fieldname);
+		const char *prefix = "Unknown option: ";
+		char *buf = mxCalloc(strlen(prefix) + strlen(fieldname) + 1,
+				     sizeof(*buf));
+		sprintf(buf, "%s%s", prefix, fieldname);
 		mexWarnMsgTxt(buf);
+		mxFree(buf);
 	    }
 
 	    /* We can't have minsize larger than maxsize. */

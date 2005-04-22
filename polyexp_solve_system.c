@@ -83,10 +83,16 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     if (!mxIsCell(prhs[2]))
 	mexErrMsgTxt("convres_c is expected to be a cell array.");
-    
-    if (!mxIsNumeric(prhs[3]) || mxIsComplex(prhs[3])
-	|| mxIsSparse(prhs[3]) || !mxIsDouble(prhs[3]))
+
+    /* We can't check mxIsDouble(prhs[3]) since it is a logical
+     * variable, which in matlab 6.5 has its own class. Neither can we
+     * check mxIsNumeric(prhs[3]) since logicals are no longer
+     * considered numeric in matlab 6.5.
+     */
+    if (mxIsComplex(prhs[3]) || mxIsSparse(prhs[3]))
     {
+	mexPrintf("%d %d %d\n",mxIsNumeric(prhs[3]), mxIsComplex(prhs[3])
+		  ,mxIsSparse(prhs[3]));
 	mexErrMsgTxt("Unexpected format for is_real.");
     }
 
@@ -100,7 +106,11 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
     /* We have no expectations on cout_data (prhs[6]). */
-    
+
+    /* Regardless whether prhs[3] is a double with logical flag
+     * (matlab 5.3) or a variable of class logical (matlab 6.5),
+     * mxGetScalar() automatically converts it to a double.
+     */
     is_real = (int) mxGetScalar(prhs[3]);
 
     if (nlhs > 1)

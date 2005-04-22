@@ -83,7 +83,8 @@ function [r, cout] = polyexp(signal, certainty, basis, ...
 %   0 0 1 0 2 1
 % 
 % Thus by letting BASIS be an NxM matrix, an arbitrary basis can be
-% constructed.
+% constructed. A special convention is that an empty matrix is interpreted
+% as the default quadratic basis.
 %
 % The exact meaning of 'constant', 'linear', 'bilinear', 'quadratic', and
 % 'cubic' in the various dimensionalities is specified in this table of
@@ -309,6 +310,12 @@ if iscell(applicability)
 end
 
 % Basis functions. If given as string, convert to matrix form.
+% A special convention is that an empty matrix is interpreted as the default
+% basis (quadratic).
+if isempty(basis)
+    basis = 'quadratic';
+end
+
 if ischar(basis)
     switch basis
      case 'constant'

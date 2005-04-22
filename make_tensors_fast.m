@@ -48,8 +48,6 @@ function [T, params] = make_tensors_fast(signal, spatial_size, ...
 %
 % OPTIONS.sigma - Standard deviation of a Gaussian applicability. The
 %                 default value is 0.15(K-1), where K is the SPATIAL_SIZE.
-%                 However, if OPTIONS.delta is set, that value is used
-%                 instead.
 %
 % OPTIONS.delta - The value of the gaussian applicability when it reaches
 %                 the end of the supporting region along an axis. If both
@@ -196,7 +194,7 @@ switch N
 	nb = size(b, 3);
 
 	% Compute the inverse metric.
-	Q = zeros(nb,nb);
+	Q = zeros(nb, nb);
 	for i = 1:nb
 	    for j = i:nb
 		Q(i,j) = sum(sum(b(:,:,i).*applicability.*certainty.*b(:,:,j)));
@@ -285,7 +283,7 @@ switch N
 	nb = size(b, 4);
 
 	% Compute the inverse metric.
-	Q = zeros(nb,nb);
+	Q = zeros(nb, nb);
 	for i = 1:nb
 	    for j = i:nb
 		Q(i,j) = sum(sum(sum(b(:,:,:,i).*applicability.*certainty.*b(:,:,:,j))));

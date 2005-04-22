@@ -28,6 +28,11 @@ if nargin < 5
     densities = [1 0.9 0.7];
 end
 
+if nargin < 4
+    c = ones(size(v));
+    densities = 1;
+end
+
 phi = angular_error(v0, v);
 
 phi2 = phi(mask);
@@ -38,5 +43,5 @@ disp(sprintf(' error    dev'))
 for density = densities
     m = mean(phi2(order(1:floor(density*length(phi2)))));
     s = std(phi2(order(1:floor(density*length(phi2)))));
-    disp(sprintf('%6.3f   %6.3f  %3d%%', m, s, density*100))
+    disp(sprintf('%6.3f   %6.3f  %3d%%', m, s, round(density*100)))
 end
