@@ -1,0 +1,4 @@
+1.1 Released August 21, 2001
+
+- New files normconv.c and normconv.m, implementing normalized
+  convolution.

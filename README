@@ -1,6 +1,6 @@
 			 General Information
 
-This is spatial_domain_toolbox-1.0, a collection of matlab functions
+This is spatial_domain_toolbox-1.1, a collection of matlab functions
 and scripts implementing some of the algorithms described in "Spatial
 Domain Methods for Orientation and Velocity Estimation", the
 licentiate thesis by Gunnar Farnebäck. The latest version should
@@ -34,6 +34,8 @@ gaussian_app.m
 make_tensors_fast.m
 min_quadform.c
 min_quadform.m
+normconv.c
+normconv.m
 read_yosemite.m
 remove_isotropic.m
 tensorprod.m
@@ -67,9 +69,9 @@ installed.
 			     Installation
 
 Untar the archive and copy all files to a directory where Matlab can
-find them. You also need to compile two C mex files, which can be done
-by running "mex conv3.c" and "mex min_quadform.c" from a shell or from
-inside Matlab.
+find them. You also need to compile the C mex files, which can be done
+by running "mex conv3.c", and similarly for the other C files, from a
+shell or from inside Matlab.
 
 
 			      References
@@ -100,5 +102,5 @@ to the author at gf@isy.liu.se. The toolbox is of course provided as
 is, no warranty, etc.
 
 
-Linköping 2001-07-06
+Linköping 2001-08-21
 Gunnar Farnebäck
