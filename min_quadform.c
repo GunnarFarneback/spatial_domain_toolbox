@@ -3,15 +3,15 @@
 /*
  * P = MIN_QUADFORM(Qtot)
  * 
- * Minimize quadratic forms according to equations 5.20 -- 5.24 in
- * "Spatial Domain Methods for Orientation and Velocity Estimation"
- * by Gunnar Farnebäck.
+ * Minimize quadratic forms according to equations 6.20 -- 6.24 in
+ * Gunnar Farnebäck's thesis "Polynomial Expansion for Orientation and
+ * Motion Estimation".
  *
  * Qtot   - A collection of quadratic forms, having the size
- *          HEIGTHxWIDTHxNxN.
+ *          HEIGTH x WIDTH x N x N.
  * 
  * P      - A collection of optimal parameters, having the size
- *          HEIGHTxWIDTHx(N-1).
+ *          HEIGHT x WIDTH x (N-1).
  * 
  * Author: Gunnar Farnebäck
  *         Computer Vision Laboratory
@@ -19,7 +19,8 @@
  *         gf@isy.liu.se
  */
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void
+mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     int i, j, k;
     const int *Qtotdim;

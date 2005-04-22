@@ -4,8 +4,8 @@ function T = remove_isotropic(T)
 % T is assumed to be an MxNx3x3 tensor field, where each 3x3 matrix is
 % assumed to be symmetric. The function computes the smallest eigenvalue of
 % each 3x3 matrix and subtracts this eigenvalue times the identity matrix.
-% The algorithm follows appendix E of "Spatial Domain Methods for
-% Orientation and Velocity Estimation" by Gunnar Farnebäck.
+% The algorithm follows appendix G of Gunnar Farnebäck's thesis "Polynomial
+% Expansion for Orientation and Motion Estimation".
 %
 % Author: Gunnar Farnebäck
 %         Computer Vision Laboratory

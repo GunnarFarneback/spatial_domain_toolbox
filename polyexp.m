@@ -1,14 +1,21 @@
-function r = polyexp(signal, certainty, basis, spatial_size, sigma, options)
+function [r, cout] = polyexp(signal, certainty, basis, ...
+			     spatial_size, sigma, options)
 % R = POLYEXP(SIGNAL, CERTAINTY, BASIS, SPATIAL_SIZE, SIGMA, OPTIONS)
+% or
+% [R COUT] = POLYEXP(SIGNAL, CERTAINTY, BASIS, SPATIAL_SIZE, SIGMA, OPTIONS)
 % 
-% Compute polynomial expansion in one, two, or three dimensions. The
-% expansion coefficients are computed according to an algorithm by Gunnar
-% Farnebäck, described in chapter 4 of "Spatial Domain Methods for
-% Orientation and Velocity Estimation".
+% Compute polynomial expansion in up to four dimensions. The expansion
+% coefficients are computed according to an algorithm described in chapter 4
+% of Gunnar Farnebäck's thesis "Polynomial Expansion for Orientation and
+% Motion Estimation".
 %
 % SIGNAL
 %   Signal values. Must be real and nonsparse and the number of dimensions,
-%   N, must be one, two, or three.
+%   N, must be one, two, three, or four.
+%
+%   N.B. 1D signals must be represented as column vectors. Row vectors
+%        are interpreted as (very narrow) 2D signals.
+%
 %
 % CERTAINTY [optional]
 %   Certainty values. Must be real and nonsparse, with size identical to the
@@ -43,6 +50,13 @@ function r = polyexp(signal, certainty, basis, spatial_size, sigma, options)
 %   the expansion coefficients. In the case that OPTIONS.region_of_interest
 %   is less than N-dimensional, the singleton dimensions are removed.
 %
+% COUT
+%   Output certainty. This is only available if OPTIONS includes a
+%   field cout_func. COUT has N+K dimensions, where the first N
+%   indices indicate the position in the signal and the last K dimensions
+%   hold the output certainty. In the case that OPTIONS.region_of_interest
+%   is less than N-dimensional, the singleton dimensions are removed.
+%   
 % 
 % The optional parameters can safely be omitted from the right. In some
 % cases the code can detect early omissions, such as the fact that the last
@@ -58,7 +72,7 @@ function r = polyexp(signal, certainty, basis, spatial_size, sigma, options)
 % the signal. (Notice that this with the common visalization of images would
 % mean downwards, not rightwards.) Naturally y then increases along the
 % second dimension of the signal. Both variables take integer values in the
-% interval [-(M-1)/2, (M-1)/2], where K is the SPATIAL_SIZE. The ordering of
+% interval [-(K-1)/2, (K-1)/2], where K is the SPATIAL_SIZE. The ordering of
 % the expansion coefficients in R of course follows the basis functions.
 %
 % Since the basis functions are restricted to monomials, they are uniquely
@@ -73,7 +87,7 @@ function r = polyexp(signal, certainty, basis, spatial_size, sigma, options)
 %
 % The exact meaning of 'constant', 'linear', 'bilinear', 'quadratic', and
 % 'cubic' in the various dimensionalities is specified in this table of
-% equivalent basis matrices:
+% equivalent basis matrices (4D is not listed but follows the same system):
 %
 % Dimensionality:   1                 2                    3
 %
@@ -131,11 +145,26 @@ function r = polyexp(signal, certainty, basis, spatial_size, sigma, options)
 %                 interpreted in the context of the actual code for this
 %                 function.
 %
+% OPTIONS.cout_func -
+%                 Name of a function to compute output certainty.
+%                 The function will be called for each point where
+%                 expansion coefficients are computed. The call is
+%                 of the form cout_func(G, G0, h, r, cout_data)
+%                 where G and G0 are as in equation (3.18),
+%                 r is a vector with the expansion coefficients,
+%                 h equals G*r, and cout_data is specified below.
+%                 The output from cout_func must be a numeric array
+%                 of the same size at all points.
+%                 
+% OPTIONS.cout_data -
+%                 Arbitrary data passed on to cout_func.
+%                 
+%
 % Author: Gunnar Farnebäck
 %         Computer Vision Laboratory
 %         Linköping University, Sweden
 %         gf@isy.liu.se
-tic
+
 % We are going to modify the value returned by nargin, so we copy it to a
 % variable.
 numin = nargin;
@@ -152,11 +181,16 @@ if N == 2 & size(signal, 2) == 1
     N = 1;
 end
 
+if N > 4
+    error('more than four signal dimensions unsupported')
+end
+
 % Does the second parameter look like a certainty? If not we set the
-% certainty to the default value [] (full certainty).
+% certainty to the default value [] (constant certainty).
 if numin >= 2
-    if (ndims(certainty) ~= ndims(signal)...
-	| ~all(size(certainty) == size(signal)))
+    if (~isempty(certainty) ...
+	& (ndims(certainty) ~= ndims(signal) ...
+	   | ~all(size(certainty) == size(signal))))
 	% Not a certainty. Shift all remaining parameters one step.
 	if numin >= 5
 	    options = sigma;
@@ -253,6 +287,8 @@ else
 	applicability = {a, a'};
     elseif N == 3
 	applicability = {a, a', shiftdim(a, -2)};
+    elseif N == 4
+	applicability = {a, a', shiftdim(a, -2), shiftdim(a, -3)};
     end
 end
 
@@ -287,6 +323,11 @@ if ischar(basis)
 	  basis = [0 1 0 0
 		   0 0 1 0
 		   0 0 0 1];
+      elseif N == 4
+	  basis = [0 1 0 0 0
+		   0 0 1 0 0
+		   0 0 0 1 0
+		   0 0 0 0 1];
       end
      case 'bilinear'
       if N == 1
@@ -298,6 +339,11 @@ if ischar(basis)
 	  basis = [0 1 0 0 1 1 0 1
 		   0 0 1 0 1 0 1 1
 		   0 0 0 1 0 1 1 1];
+      elseif N == 4
+	  basis = [0 1 0 0 0 1 1 1 0 0 0 1 1 1 0 1
+		   0 0 1 0 0 1 0 0 1 1 0 1 1 0 1 1
+		   0 0 0 1 0 0 1 0 1 0 1 1 0 1 1 1
+		   0 0 0 0 1 0 0 1 0 1 1 0 1 1 1 1];
       end
      case 'quadratic'
       if N == 1
@@ -309,6 +355,11 @@ if ischar(basis)
 	  basis = [0 1 0 0 2 0 0 1 1 0
 		   0 0 1 0 0 2 0 1 0 1
 		   0 0 0 1 0 0 2 0 1 1];
+      elseif N == 4
+	  basis = [0 1 0 0 0 2 0 0 0 1 1 1 0 0 0 
+		   0 0 1 0 0 0 2 0 0 1 0 0 1 1 0 
+		   0 0 0 1 0 0 0 2 0 0 1 0 1 0 1 
+		   0 0 0 0 1 0 0 0 2 0 0 1 0 1 1];
       end
      case 'cubic'
       if N == 1
@@ -320,6 +371,10 @@ if ischar(basis)
 	  basis = [0 1 0 0 2 0 0 1 1 0 3 0 0 2 2 1 0 1 0
 		   0 0 1 0 0 2 0 1 0 1 0 3 0 1 0 2 2 0 1
 		   0 0 0 1 0 0 2 0 1 1 0 0 3 0 1 0 1 2 2];
+  basis = [0 1 0 0 0 2 0 0 0 1 1 1 0 0 0 3 0 0 0 2 2 2 1 0 0 1 0 0 1 0 0
+	   0 0 1 0 0 0 2 0 0 1 0 0 1 1 0 0 3 0 0 1 0 0 2 2 2 0 1 0 0 1 0
+	   0 0 0 1 0 0 0 2 0 0 1 0 1 0 1 0 0 3 0 0 1 0 0 1 0 2 2 2 0 0 1
+	   0 0 0 0 1 0 0 0 2 0 0 1 0 1 1 0 0 0 3 0 0 1 0 0 1 0 0 1 2 2 2];
       end
      otherwise
       error('unknown basis name')
@@ -332,9 +387,9 @@ end
 
 % Decide method.
 if isempty(certainty)
-    full_certainty = 1;
+    constant_certainty = 1;
 else
-    full_certainty = 0;
+    constant_certainty = 0;
 end
 
 if iscell(applicability)
@@ -347,11 +402,11 @@ if isfield(options, 'save_memory') & options.save_memory ~= 0
     separable_computations = 0;
 end
 
-if full_certainty & separable_computations
+if constant_certainty & separable_computations
     method = 'SC';
-elseif full_certainty & ~separable_computations
+elseif constant_certainty & ~separable_computations
     method = 'C';
-elseif ~full_certainty & separable_computations
+elseif ~constant_certainty & separable_computations
     method = 'SNC';
 else
     method = 'NC';
@@ -391,9 +446,33 @@ if ~separable_computations
 	X{1} = outerprod(outerprod(x1, ones(size(x2))), ones(size(x3)));
 	X{2} = outerprod(outerprod(ones(size(x1)), x2), ones(size(x3)));
 	X{3} = outerprod(outerprod(ones(size(x1)), ones(size(x2))), x3);
+    elseif N == 4
+	x1 = X{1};
+	x2 = X{2};
+	x3 = X{3};
+	x4 = X{4};
+	X{1} = outerprod(outerprod(outerprod(x1, ones(size(x2))), ...
+				   ones(size(x3))), ones(size(x4)));
+	X{2} = outerprod(outerprod(outerprod(ones(size(x1)), x2), ...
+				   ones(size(x3))), ones(size(x4)));
+	X{3} = outerprod(outerprod(outerprod(ones(size(x1)), ...
+					     ones(size(x2))), x3), ...
+			 ones(size(x4)));
+	X{4} = outerprod(outerprod(outerprod(ones(size(x1)), ...
+					     ones(size(x2))), ...
+				   ones(size(x3))), x4);
     end
 end
-    
+
+% Are we expected to compute output certainty?
+if nargout == 2 & ~isfield(options, 'cout_func')
+    error('Output certainty expected but no function to compute it provided.');
+end
+
+cout_needed = 0;
+if nargout == 2 & isfield(options, 'cout_func')
+    cout_needed = 1;
+end
 
 
 % The caller wants a report about what we are doing.
@@ -406,7 +485,7 @@ if isfield(options, 'verbose') & options.verbose ~= 0
     disp('region_of_interest:');
     disp(region_of_interest);
     if isempty(certainty)
-	disp('full certainty assumed');
+	disp('constant certainty assumed');
     end
     for k = 1:N
 	disp(sprintf('X%d:\n', k));
@@ -436,8 +515,17 @@ if strcmp(method, 'NC')
     B = reshape(B, [appsize M]);
     
     % Then call normconv.
-    r = normconv(signal, certainty, B, applicability, region_of_interest);
-
+    if ~cout_needed
+	r = normconv(signal, certainty, B, applicability, region_of_interest);
+    else
+	normconv_options.cout_func = options.cout_func;
+	if isfield(options, 'cout_data')
+	    normconv_options.cout_data = options.cout_data;
+	end
+	[r cout] = normconv(signal, certainty, B, applicability, ...
+			    region_of_interest, normconv_options);
+    end
+	
 elseif strcmp(method, 'C')
     % Convolution. Compute the metric G and the equivalent correlation
     % kernels.
@@ -449,7 +537,7 @@ elseif strcmp(method, 'C')
 	end
 	B(:, j) = b(:);
     end
-    W = sparse(diag(applicability(:)));
+    W = diag(sparse(applicability(:)));
     G = B' * W * B;
     B = W * B * inv(G);
     
@@ -458,9 +546,13 @@ elseif strcmp(method, 'C')
     for j = 1:M
 	coeff = conv3(signal, reshape(B(:,j), size(applicability)),...
 		      region_of_interest);
-	r(:,j) = coeff(:);
+	r(:, j) = coeff(:);
     end
     r = reshape(r, [1+diff(region_of_interest') M]);
+
+    if cout_needed
+	cout = arrayloop(N, r, 'polyexp_cout_helper', G, options);
+    end
     
 elseif strcmp(method, 'SC')
     % Separable Convolution. This implements the generalization of figure
@@ -535,7 +627,7 @@ elseif strcmp(method, 'SC')
 	end
 	B(:, j) = b(:);
     end
-    W = sparse(diag(full_applicability(:)));
+    W = diag(sparse(full_applicability(:)));
     G = B' * W * B;
     Ginv = inv(G);
     
@@ -549,6 +641,10 @@ elseif strcmp(method, 'SC')
 	end
     end
     r = reshape(r, [1+diff(region_of_interest') M]);
+    
+    if cout_needed
+	cout = arrayloop(N, r, 'polyexp_cout_helper', G, options);
+    end
     
 elseif strcmp(method, 'SNC')
     % Separable Normalized Convolution. This implements the generalization
@@ -638,9 +734,37 @@ elseif strcmp(method, 'SNC')
     % expansion coefficients. This is for performance reasons unreasonable
     % to implement in matlab code (except when there are very few basis
     % functions), so we resort to solving this with a mex file.
-    toc
-    r = polyexp_solve_system(basis, convres_f, convres_c);
-    toc
+    if ~cout_needed
+	r = polyexp_solve_system(basis, convres_f, convres_c, isreal(signal));
+    else
+	full_applicability = applicability{1};
+	for k = 2:N
+	    full_applicability = outerprod(full_applicability, applicability{k});
+	end
+	
+	% We need to compute G0.
+	B = zeros([prod(size(full_applicability)) M]);
+	for j = 1:M
+	    b = 1;
+	    for k = 1:N
+		b = outerprod(b, X{k} .^ basis(k, j));
+	    end
+	    B(:, j) = b(:);
+	end
+	W = diag(sparse(full_applicability(:)));
+	G0 = B' * W * B;
+	
+	if ~isfield(options, 'cout_data')
+	    [r, cout] = polyexp_solve_system(basis, convres_f, convres_c, ...
+					     isreal(signal), ...
+					     options.cout_func, G0);
+	else
+	    [r, cout] = polyexp_solve_system(basis, convres_f, convres_c, ...
+					     isreal(signal), ...
+					     options.cout_func, G0, ...
+					     options.cout_data);
+	end
+    end
 end
 
 return

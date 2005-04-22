@@ -4,16 +4,16 @@ function [T, params] = make_tensors_fast(signal, spatial_size, ...
 % or
 % [T,PARAMS]=MAKE_TENSORS_FAST(SIGNAL,SPATIAL_SIZE,REGION_OF_INTEREST,OPTIONS)
 % 
-% Compute orientation tensors in two, three, or four dimensions. The tensors
-% are computed according to an algorithm by Gunnar Farnebäck, described in
-% chapter 4 of "Spatial Domain Methods for Orientation and Velocity
+% Compute orientation tensors in up to four dimensions. The tensors are
+% computed according to an algorithm described in chapter 5 of Gunnar
+% Farnebäck's thesis, "Polynomial Expansion for Orientation and Motion
 % Estimation". This implementation uses the "Separable Convolution" method
 % with completely separable filters in a hierarchical scheme. The
 % applicability (weighting function) is limited to be a Gaussian.
 % 
 % SIGNAL                        - Signal values. Must be real and nonsparse 
 %                                 and the number of dimensions, N, must be
-%                                 two, three, or four.
+%                                 at most four.
 %
 % SPATIAL_SIZE [optional]       - Size of the spatial support of the filters
 %                                 along each dimension. Default value is 9.
@@ -42,25 +42,19 @@ function [T, params] = make_tensors_fast(signal, spatial_size, ...
 % The following fields may be specified in the OPTIONS parameter:
 % OPTIONS.gamma - Relation between the contribution to the tensor from the
 %                 linear and the quadratic parts of the signal, as specified
-%                 in equation 4.23. 0 means that only the quadratic part
+%                 in equation (5.19). 0 means that only the quadratic part
 %                 matters while a very large number means that only the
 %                 linear part is used. Default value is 1/(8*sigma^2).
 %
-% OPTIONS.sigma - The filters are designed via normalized convolution, using
-%                 a gaussian applicability function. This value sets the
-%                 standard deviation of the gaussian. The size of the
-%                 gaussian should be chosen with respect to the scale of the
-%                 interesting structures in the signal. Additionally it is
-%                 important that it is isotropic, i.e. that the contribution
-%                 from close to the corners of the supporting region is
-%                 negligible. Therefore it may be advisable to use
-%                 OPTIONS.delta instead.
+% OPTIONS.sigma - Standard deviation of a Gaussian applicability. The
+%                 default value is 0.15(K-1), where K is the SPATIAL_SIZE.
+%                 However, if OPTIONS.delta is set, that value is used
+%                 instead.
 %
 % OPTIONS.delta - The value of the gaussian applicability when it reaches
 %                 the end of the supporting region along an axis. If both
-%                 OPTIONS.sigma and OPTIONS.delta are set, the value of the
-%                 latter will be used. If neither is given the default value
-%                 is delta=0.005;
+%                 OPTIONS.sigma and OPTIONS.delta are set, the former is
+%                 used.
 %
 % OPTIONS.c     - Certainty mask. Must be spatially invariant and symmetric
 %                 with respect to all axes and have a size compatible with
@@ -73,16 +67,35 @@ function [T, params] = make_tensors_fast(signal, spatial_size, ...
 %         Linköping University, Sweden
 %         gf@isy.liu.se
 
+% We are going to modify the value returned by nargin, so we copy it to a
+% variable.
+numin = nargin;
+
 N = ndims(signal);
 if N == 2 & size(signal, 2) == 1
     N = 1;
 end
 
-if nargin < 2
+if numin < 2 | (numin == 2 & isstruct(spatial_size))
+    if numin == 2
+	numin = 3;
+	region_of_interest = spatial_size;
+    end
     spatial_size = 9;
 end
+    
+if spatial_size < 1
+    error('What use would such a small kernel be?')
+elseif mod(spatial_size, 2)~=1
+    spatial_size = 2*floor((spatial_size-1)/2) + 1;
+    warning(sprintf('Only kernels of odd size are allowed. Changed the size to %d.', spatial_size))
+end
 
-if nargin < 3
+if numin < 3 | (numin == 3 & isstruct(region_of_interest))
+    if numin == 3
+	numin = 4;
+	options = region_of_interest;
+    end
     if N == 1
 	region_of_interest = [1 size(signal, 1)];
     else
@@ -90,17 +103,15 @@ if nargin < 3
     end
 end
 
-delta = 0.005;
+sigma = 0.15 * (spatial_size - 1);
 gamma = -1; % Mark gamma as uninitialized.
 certainty = ones(repmat(spatial_size, [1 N]));
 
-if nargin == 4
-    if isfield(options, 'delta')
-	delta = options.delta;
-    elseif isfield(options, 'sigma')
-	delta = exp(-((spatial_size-1)/2)^2/(2*options.sigma^2));
-    else
-	delta = 0.005;
+if numin == 4
+    if isfield(options, 'sigma')
+	sigma = options.sigma;
+    elseif isfield(options, 'delta')
+	sigma = n/sqrt(-2*log(delta));
     end
     if isfield(options, 'gamma')
 	gamma = options.gamma;
@@ -110,15 +121,7 @@ if nargin == 4
     end
 end
 
-if spatial_size < 1
-    error('What use would such a small kernel be?')
-elseif mod(spatial_size, 2)~=1
-    spatial_size = 2*floor((spatial_size-1)/2) + 1;
-    warning(sprintf('Only kernels of odd size are allowed. Changed the size to %d.', spatial_size))
-end
-
 n = (spatial_size - 1) / 2;
-sigma = n / sqrt(-2*log(delta));
 a = exp(-(-n:n).^2/(2*sigma^2))';
 
 % If gamma has not been set explicitly, use default value.
@@ -128,7 +131,62 @@ end
 
 switch N
     case 1
-	error('Tensors for 1D signals are pretty useless and have not been implemented.')
+      	% Comment: Orientation tensors in 1D are fairly pointless and only
+      	%          included here for completeness.
+      	%
+	% Set up applicability and basis functions.
+	applicability = a;
+	x = (-n:n)';
+	b = [ones(size(x)) x x.*x];
+	nb = size(b, 2);
+
+	% Compute the inverse metric.
+	Q = zeros(nb, nb);
+	for i = 1:nb
+	    for j = i:nb
+		Q(i,j) = sum(b(:,i).*applicability.*certainty.*b(:,j));
+		Q(j,i) = Q(i,j);
+	    end
+	end
+	clear b applicability x y
+	Qinv = inv(Q);
+	
+	% Convolutions in the x-direction.
+	kernelx0 = a;
+	kernelx1 = (-n:n)'.*a;
+	kernelx2 = (-n:n)'.^2.*a;
+	roix = region_of_interest;
+	roix(1) = max(roix(1), 1);
+	roix(2) = min(roix(2), length(signal));
+	conv_results = zeros([diff(region_of_interest')+1 3]);
+	conv_results(:,1) = conv3(signal, kernelx0, roix);
+	conv_results(:,2) = conv3(signal, kernelx1, roix);
+	conv_results(:,3) = conv3(signal, kernelx2, roix);
+	
+	% Apply the inverse metric.
+	conv_results(:,2) = Qinv(2,2) * conv_results(:,2);
+	conv_results(:,3) = Qinv(3,3) * conv_results(:,3) + ...
+			    Qinv(3,1) * conv_results(:,1);
+	
+	% Build tensor components.
+	%
+	% It's more efficient in matlab code to do a small matrix
+	% multiplication "manually" in parallell over all the points
+	% than doing a multiple loop over the points and computing the
+	% matrix products "automatically".
+	% The tensor is of the form A*A'+gamma*b*b', where A and b are
+	% composed from the convolution results according to
+	% 
+	% A=[3], b=[2].
+	%
+	% Thus (excluding gamma)
+	%
+	% T=[3*3+2*2].
+
+	T = zeros([diff(region_of_interest')+1 1 1]);
+	T(:,1,1) = conv_results(:,3).^2 + gamma * conv_results(:,2).^2;
+	T = squeeze(T);
+	
     
     case 2
 	% Set up applicability and basis functions.
@@ -201,7 +259,7 @@ switch N
 	% Thus (excluding gamma)
 	%
 	%   [4*4+6*6+2*2 4*6+5*6+2*3]
-	% T=[4*6+5*6+2*3 6*6+5*5+3*3]
+	% T=[4*6+5*6+2*3 6*6+5*5+3*3].
 
 	T = zeros([diff(region_of_interest')+1 2 2]);
 	T(:,:,1,1) = conv_results(:,:,4).^2+...
@@ -381,8 +439,8 @@ switch N
 	Q = zeros(nb, nb);
 	for i = 1:nb
 	    for j = i:nb
-		Q(i,j) = sum(sum(sum(sum(b(:,:,:,i).*applicability.*...
-					 certainty.*b(:,:,:,j)))));
+		Q(i,j) = sum(sum(sum(sum(b(:,:,:,:,i).*applicability.*...
+					 certainty.*b(:,:,:,:,j)))));
 		Q(j,i) = Q(i,j);
 	    end
 	end
@@ -394,7 +452,7 @@ switch N
 	kernelt1 = reshape((-n:n)'.*a, [1 1 1 spatial_size]);
 	kernelt2 = reshape(((-n:n).^2)'.*a, [1 1 1 spatial_size]);
 	roit = region_of_interest+[-n n;-n n;-n n;0 0];
-	roit(:,1) = max(roit(:,1), ones(3,1));
+	roit(:,1) = max(roit(:,1), ones(4,1));
 	roit(:,2) = min(roit(:,2), size(signal)');
 	conv_t0 = conv3(signal, kernelt0, roit);
 	conv_t1 = conv3(signal, kernelt1, roit);
@@ -429,7 +487,7 @@ switch N
 	roiy = region_of_interest + [-n n;0 0;0 0;0 0];
 	roiy(:,1) = max(roiy(:,1), ones(4,1));
 	roiy(:,2) = min(roiy(:,2), size(signal)');
-	roiy = roiy(1:ndims(conv_t0y0),:);
+	roiy = roiy(1:ndims(conv_t0z0),:);
 	roiy(3:end,:) = roiy(3:end,:) + 1 - repmat(roiy(3:end,1),[1 2]);
 	conv_t0z0y0 = conv3(conv_t0z0, kernely0, roiy);
 	conv_t0z0y1 = conv3(conv_t0z0, kernely1, roiy);
@@ -453,7 +511,7 @@ switch N
 	kernelx1 = reshape(kernelt1, [spatial_size 1]);
 	kernelx2 = reshape(kernelt2, [spatial_size 1]);
 	roix = region_of_interest;
-	roix = roix(1:ndims(conv_t0y0z0),:);
+	roix = roix(1:ndims(conv_t0z0y0),:);
 	roix(2:end,:) = roix(2:end,:) + 1 - repmat(roix(2:end,1),[1 2]);
 	conv_results = zeros([diff(region_of_interest')+1 15]);
 	conv_results(:,:,:,:,1) = conv3(conv_t0z0y0, kernelx0, roix); % t0z0y0x0
@@ -463,7 +521,7 @@ switch N
 	conv_results(:,:,:,:,3) = conv3(conv_t0z0y1, kernelx0, roix); % t0z0y1x0
 	conv_results(:,:,:,:,10) = conv3(conv_t0z0y1, kernelx1, roix)/2; % t0z0y1x1
 	clear conv_t0z0y1
-	conv_results(:,:,:,:,7) = conv3(conv_t0y0y2, kernelx0, roix); % t0z0y2x0
+	conv_results(:,:,:,:,7) = conv3(conv_t0z0y2, kernelx0, roix); % t0z0y2x0
 	clear conv_t0z0y2
 	conv_results(:,:,:,:,4) = conv3(conv_t0z1y0, kernelx0, roix); % t0z1y0x0
 	conv_results(:,:,:,:,11) = conv3(conv_t0z1y0, kernelx1, roix)/2; % t0z1y0x1
@@ -525,7 +583,7 @@ switch N
 	%
 	%    6*11+10*13+8*11+12*15+2*4 6*12+10*14+11*15+9*12+2*5]
 	%    10*11+7*13+8*13+14*15+3*4 10*12+7*14+13*15+9*14+3*5]
-	%    11*11+13*13+8*8+15*15+4*4 11*12+13*14+8*15+9*15+4*5]
+	%    11*11+13*13+8*8+15*15+4*4 11*12+13*14+8*15+9*15+4*5].
 	%    11*12+13*14+8*15+9*15+4*5 12*12+14*14+15*15+9*9+5*5]
 	
 	T = zeros([diff(region_of_interest')+1 3 3]);

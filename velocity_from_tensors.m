@@ -2,21 +2,21 @@ function [v, cout] = velocity_from_tensors(T, model, kernelsize, sigma, cin)
 % [V, COUT] = VELOCITY_FROM_TENSORS(T, MODEL, KERNELSIZE, SIGMA, CIN)
 %
 % Compute a velocity field from a tensor field, using the algorithm
-% described in section 5.5 of "Spatial Domain Methods for Orientation and
-% Velocity Estimation" by Gunnar Farnebäck. Normalized averaging is
+% described in section 6.5 of Gunnar Farnebäck's thesis "Polynomial
+% Expansion for Orientation and Motion Estimation". Normalized averaging is
 % performed separably with a Gaussian filter.
 %
-% T          - Tensor field of size width x height x 3 x 3.
+% T          - Tensor field of size height x width x 3 x 3.
 % MODEL      - Velocity field model. Supported are 'constant', 'affine',
 %              and 'eightparam', with definitions according to equations
-%              5.4, 5.5, and 5.6.
+%              6.4, 6.5, and 6.6.
 % KERNELSIZE - Spatial size of the Gaussian averaging filter.
 % SIGMA      - Standard deviation of the Gaussian averaging filter
 % CIN        - Input certainty for the tensor field, used in the normalized
 %              averaging step. Typically cin should be reduced close to the
 %              borders of the tensor field.
-% V          - Estimated velocity field of size width x height x 2
-% COUT       - Output confidence field, according to equation 5.23. Notice
+% V          - Estimated velocity field of size height x width x 2
+% COUT       - Output confidence field, according to equation 6.23. Notice
 %              that a small value indicates a high confidence.
 %
 % Author: Gunnar Farnebäck
