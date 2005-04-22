@@ -1,6 +1,6 @@
 			 General Information
 
-This is spatial_domain_toolbox-0.9, a collection of matlab functions
+This is spatial_domain_toolbox-1.0, a collection of matlab functions
 and scripts implementing some of the algorithms described in "Spatial
 Domain Methods for Orientation and Velocity Estimation", the
 licentiate thesis by Gunnar Farnebäck. The latest version should
@@ -27,6 +27,8 @@ angular_error.m
 conv3.c
 conv3.m
 conv3_readable.c
+csegment.c
+csegment.h
 evaluate_velocity.m
 gaussian_app.m
 make_tensors_fast.m
@@ -77,10 +79,12 @@ found at
 
 http://www.isy.liu.se/~gf/publications.html
 
-In particular, the algorithms included in version 0.9 of the toolbox
+In particular, the algorithms included in version 1.0 of the toolbox
 mostly cover what is presented in the paper "Fast and Accurate Motion
 Estimation using Orientation Tensors and Parametric Motion Models"
-(ICPR 2000).
+(ICPR 2000) and "Very High Accuracy Velocity Estimation using
+Orientation Tensors, Parametric Motion, and Simultaneous Segmentation
+of the Motion Field" (ICCV 01).
 
 
 			 Further Development
@@ -96,5 +100,5 @@ to the author at gf@isy.liu.se. The toolbox is of course provided as
 is, no warranty, etc.
 
 
-Linköping 2000-09-01
+Linköping 2001-07-06
 Gunnar Farnebäck
