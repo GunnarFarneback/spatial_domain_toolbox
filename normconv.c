@@ -394,7 +394,7 @@ normconv1(const double *signal_r,
 	result_r[resultindex] = h_r[0] / G_r[0];
       else
       {
-	double w = 1./(G_r[0] * G_r[0] + G_i[0] * G_i[0]);
+	double w = 1.0 / (G_r[0] * G_r[0] + G_i[0] * G_i[0]);
 	result_r[resultindex] = w * (h_r[0] * G_r[0] + h_i[0] * G_i[0]);
 	result_i[resultindex] = w * (h_i[0] * G_r[0] - h_r[0] * G_i[0]);
       }
