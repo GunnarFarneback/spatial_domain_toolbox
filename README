@@ -1,0 +1,100 @@
+			 General Information
+
+This is spatial_domain_toolbox-0.9, a collection of matlab functions
+and scripts implementing some of the algorithms described in "Spatial
+Domain Methods for Orientation and Velocity Estimation", the
+licentiate thesis by Gunnar Farnebäck. The latest version should
+always be available at http://www.isy.liu.se/~gf/software/
+
+Author is Gunnar Farnebäck, gf@isy.liu.se.
+
+
+			       License
+
+This is free software, published under the GNU General Public License
+(GPL). What this basically means is that you are free to use, modify,
+and redistribute the program under the same license. See the file
+COPYING for details.
+
+
+				Files
+
+The tar archive should contain the following files:
+
+README                       this file
+COPYING                      GPL license text
+angular_error.m
+conv3.c
+conv3.m
+conv3_readable.c
+evaluate_velocity.m
+gaussian_app.m
+make_tensors_fast.m
+min_quadform.c
+min_quadform.m
+read_yosemite.m
+remove_isotropic.m
+tensorprod.m
+test_yosemite.m
+velocity_from_tensors.m
+yosemite_sequence/README
+yosemite_sequence/correct_flow.mat
+yosemite_sequence/yos2.tif
+yosemite_sequence/yos3.tif
+yosemite_sequence/yos4.tif
+yosemite_sequence/yos5.tif
+yosemite_sequence/yos6.tif
+yosemite_sequence/yos7.tif
+yosemite_sequence/yos8.tif
+yosemite_sequence/yos9.tif
+yosemite_sequence/yos10.tif
+yosemite_sequence/yos11.tif
+yosemite_sequence/yos12.tif
+yosemite_sequence/yos13.tif
+yosemite_sequence/yos14.tif
+yosemite_sequence/yos15.tif
+yosemite_sequence/yos16.tif
+
+
+			    Prerequisites
+
+In order for this toolbox to be useful, you need to have Matlab
+installed.
+
+
+			     Installation
+
+Untar the archive and copy all files to a directory where Matlab can
+find them. You also need to compile two C mex files, which can be done
+by running "mex conv3.c" and "mex min_quadform.c" from a shell or from
+inside Matlab.
+
+
+			      References
+
+The licentiate thesis, as well as a number of related papers, can be
+found at
+
+http://www.isy.liu.se/~gf/publications.html
+
+In particular, the algorithms included in version 0.9 of the toolbox
+mostly cover what is presented in the paper "Fast and Accurate Motion
+Estimation using Orientation Tensors and Parametric Motion Models"
+(ICPR 2000).
+
+
+			 Further Development
+
+Missing algorithms from the licentiate thesis are planned for
+inclusion in later versions of the toolbox.
+
+
+			     Bug Reports
+
+Please send bug reports, bug fixes, improvements, and success stories
+to the author at gf@isy.liu.se. The toolbox is of course provided as
+is, no warranty, etc.
+
+
+Linköping 2000-09-01
+Gunnar Farnebäck
