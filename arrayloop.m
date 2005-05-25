@@ -23,7 +23,9 @@ function varargout = arrayloop(varargin)
 % of arrays x1, x2, ..., and a1, a2, ... is an arbitrary number of
 % additional parameters. The called function is given by func,
 % which is the name of either a builtin function, an m-file function,
-% or a mex function.
+% or a mex function. Alternatively func can be a function handle or
+% an inline function. It is supposed that the first argument after N
+% which is either a string or a scalar is N.
 %
 % Author: Gunnar Farnebäck
 %         Computer Vision Laboratory

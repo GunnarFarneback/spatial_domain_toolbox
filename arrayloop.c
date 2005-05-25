@@ -1,4 +1,5 @@
 #include "mex.h"
+#include <string.h>
 
 #define DEBUG 0
 
@@ -23,6 +24,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     int *number_of_elements;
     int *number_of_elements2;
     int max_number_of_dimensions;
+
+    /* Set if the callback function is a function handle
+     * or an inline object.
+     */
+    int function_is_handle;
+
     int function_name_length;
     char *function_name;
     int first_extra_parameter;
@@ -55,11 +62,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     number_of_arrays = 0;
     number_of_points = 1;
     max_number_of_dimensions = 0;
-    for (k = 1; k < nrhs && !mxIsChar(prhs[k]); k++)
+
+    for (k = 1; k < nrhs; k++)
     {
 	int n;
-	if (!mxIsNumeric(prhs[k]) || mxIsComplex(prhs[k])
-	    || mxIsSparse(prhs[k]) || !mxIsDouble(prhs[k]))
+
+	if (mxIsChar(prhs[k]))
+	{
+	    function_is_handle = 0;
+	    break;
+	}
+
+	if (mxGetNumberOfElements(prhs[k]) == 1)
+	{
+	    function_is_handle = 1;
+	    break;
+	}
+	
+	if (!mxIsNumeric(prhs[k]) || mxIsSparse(prhs[k])
+	    || !mxIsDouble(prhs[k]))
 	{
 	    mexPrintf("Expected array for argument %d.", k + 1);
 	    mexErrMsgTxt("");
@@ -109,13 +130,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     if (k == nrhs)
 	mexErrMsgTxt("No function name provided.");
-    
-    function_name_length = mxGetM(prhs[k]) * mxGetN(prhs[k]);
-    function_name = mxCalloc(function_name_length + 1, 1);
-    if (function_name == NULL)
-	mexErrMsgTxt("Failed to allocate space for function name.");
-    if (mxGetString(prhs[k], function_name, function_name_length + 1) != 0)
-	mexErrMsgTxt("Failed to convert function name to string.");
+
+    if (!function_is_handle)
+    {
+	function_name_length = mxGetM(prhs[k]) * mxGetN(prhs[k]);
+	function_name = mxCalloc(function_name_length + 1, 1);
+	if (function_name == NULL)
+	    mexErrMsgTxt("Failed to allocate space for function name.");
+	if (mxGetString(prhs[k], function_name, function_name_length + 1) != 0)
+	    mexErrMsgTxt("Failed to convert function name to string.");
+    }
+    else
+	function_name = "feval";
 
     first_extra_parameter = k + 1;
     number_of_extra_parameters = nrhs - first_extra_parameter;
@@ -135,11 +161,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     
     /* Create array of input arrays for the callback. */
-    input_arrays = mxCalloc(number_of_arrays + number_of_extra_parameters,
+    input_arrays = mxCalloc(number_of_arrays + function_is_handle
+			    + number_of_extra_parameters,
 			    sizeof(*input_arrays));
     if (input_arrays == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
 
+    /* If the function is a handle, we need to pass the handle as the
+     * first argument to the feval call.
+     */
+    if (function_is_handle)
+	input_arrays[0] = (mxArray *) prhs[k];
+    
     /* Populate it with squeezed arrays. */
     max_number_of_dimensions -= N;
     if (max_number_of_dimensions < 2)
@@ -163,16 +196,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	for (; num_dims < 2; num_dims++)
 	    dims[num_dims] = 1;
 	
-	input_arrays[k] = mxCreateNumericArray(num_dims, dims, mxDOUBLE_CLASS,
-					       mxIsComplex(prhs[k + 1]) ?
-					       mxCOMPLEX : mxREAL);
-	if (input_arrays[k] == NULL)
+	input_arrays[k + function_is_handle] =
+	    mxCreateNumericArray(num_dims, dims, mxDOUBLE_CLASS,
+				 mxIsComplex(prhs[k + 1]) ?
+				 mxCOMPLEX : mxREAL);
+	if (input_arrays[k + function_is_handle] == NULL)
 	    mexErrMsgTxt("Failed to create an array.");
     }
     
     /* Continue population with the fixed parameters. */
     for (k = 0; k < number_of_extra_parameters; k++)
-	input_arrays[number_of_arrays + k] =
+	input_arrays[number_of_arrays + function_is_handle + k] =
 	    (mxArray *) prhs[first_extra_parameter + k];
 
     /* Create array of output arrays for the callback. */
@@ -187,22 +221,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	for (k = 0; k < number_of_arrays; k++)
 	{
 	    double *source = mxGetPr(prhs[k + 1]);
-	    double *target = mxGetPr(input_arrays[k]);
+	    double *target = mxGetPr(input_arrays[k + function_is_handle]);
 	    for (r = 0; r < number_of_elements[k]; r++)
 		target[r] = source[r * number_of_points + x];
 
-	    if (mxIsComplex(input_arrays[k]))
+	    if (mxIsComplex(input_arrays[k + function_is_handle]))
 	    {
 		source = mxGetPi(prhs[k + 1]);
-		target = mxGetPi(input_arrays[k]);
+		target = mxGetPi(input_arrays[k + function_is_handle]);
 		for (r = 0; r < number_of_elements[k]; r++)
-		    target[r] = source[r];
+		    target[r] = source[r * number_of_points + x];
 	    }
 	}
 
 	/* Call back to matlab. */
 	mexCallMATLAB(nlhs, output_arrays,
-		      number_of_arrays + number_of_extra_parameters,
+		      number_of_arrays + number_of_extra_parameters
+		      + function_is_handle,
 		      input_arrays, function_name);
 
 	/* If this is the first turn of the loop, allocate the output
@@ -264,7 +299,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    double *source = mxGetPr(output_arrays[k]);
 	    double *target = mxGetPr(plhs[k]);
 	    for (r = 0; r < number_of_elements2[k]; r++)
+	    {
+		mexPrintf("%d %d %lf\n", r, r * number_of_points + x,
+			  source[r]);
 		target[r * number_of_points + x] = source[r];
+	    }
 
 	    if (mxIsComplex(output_arrays[k]))
 	    {
@@ -294,7 +333,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		source = mxGetPi(output_arrays[k]);
 		target = mxGetPi(plhs[k]);
 		for (r = 0; r < number_of_elements2[k]; r++)
+		{
+		    mexPrintf("%d %d %lf\n", r, r * number_of_points + x,
+			      source[r]);
 		    target[r * number_of_points + x] = source[r];
+		}
 	    }
 
 	    /* Free array space. */
