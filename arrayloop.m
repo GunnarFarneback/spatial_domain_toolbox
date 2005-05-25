@@ -28,7 +28,8 @@ function varargout = arrayloop(varargin)
 % which is either a string or a scalar is N.
 %
 % Author: Gunnar Farnebäck
-%         Computer Vision Laboratory
+%         Medical Informatics
 %         Linköping University, Sweden
+%         gunnar@imt.liu.se
 
 error('ARRAYLOOP is implemented as a mex-file. It has not been compiled on this platform.')

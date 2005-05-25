@@ -9,9 +9,9 @@
  * See the help text in arrayloop.m for a description.
  * 
  * Author: Gunnar Farnebäck
- *         Computer Vision Laboratory
+ *         Medical Informatics
  *         Linköping University, Sweden
- *         gf@isy.liu.se
+ *         gunnar@imt.liu.se
  */
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
