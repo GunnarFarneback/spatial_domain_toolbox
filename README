@@ -85,18 +85,25 @@ installed. The toolbox has been tested with Matlab 5.3.
 			     Installation
 
 Untar the archive and copy all files to a directory where Matlab can
-find them. You also need to compile the C mex files, which can be done
-by running "mex conv3.c", and similarly for the other C files, from a
-shell or from inside Matlab.
+find them. You also need to compile the C mex files. This is most
+easily done by running the following code in the toolbox directory:
+
+files = dir();
+for name = {files.name}
+    file = name{1};
+    if file(end) == 'c' && file(end-1) == '.'
+        mex(file);
+    end
+end
 
 
 			      References
 
 The Ph.D. thesis, as well as a number of related papers, can be
-found at
+found at either of these pages:
 
 http://www.isy.liu.se/~gf/publications.html
-
+http://lmi.bwh.harvard.edu/papers/gunnar.html
 
 			 Further Development
 
