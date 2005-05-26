@@ -299,11 +299,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    double *source = mxGetPr(output_arrays[k]);
 	    double *target = mxGetPr(plhs[k]);
 	    for (r = 0; r < number_of_elements2[k]; r++)
-	    {
-		mexPrintf("%d %d %lf\n", r, r * number_of_points + x,
-			  source[r]);
 		target[r * number_of_points + x] = source[r];
-	    }
 
 	    if (mxIsComplex(output_arrays[k]))
 	    {
@@ -333,11 +329,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		source = mxGetPi(output_arrays[k]);
 		target = mxGetPi(plhs[k]);
 		for (r = 0; r < number_of_elements2[k]; r++)
-		{
-		    mexPrintf("%d %d %lf\n", r, r * number_of_points + x,
-			      source[r]);
 		    target[r * number_of_points + x] = source[r];
-		}
 	    }
 
 	    /* Free array space. */
