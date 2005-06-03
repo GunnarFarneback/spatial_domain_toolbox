@@ -1,3 +1,9 @@
+2005-06-03  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* estimate_disparity.m: Calls to make_Abc_fast corrected.
+
+	* make_Abc_fast.m: Empty region_of_interest gives default value.
+
 2005-05-25  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* arrayloop.c: Complex matrices supported. This was implemented

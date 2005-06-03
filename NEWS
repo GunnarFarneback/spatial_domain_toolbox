@@ -3,6 +3,7 @@
 - Bugfixes in arrayloop.c.
 - Function handles and inline functions can be used in arrayloop.
 - Complex input can be used in arrayloop.
+- estimate_disparity is less broken.
 
 2.0 Released December 17, 2002
 

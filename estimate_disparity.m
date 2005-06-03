@@ -46,8 +46,8 @@ function d = estimate_disparity(leftim, rightim, kernelsize1, sigma1, ...
 %         gf@isy.liu.se
     
 options.sigma = sigma1;
-[Al, bl, cl] = make_Abc_fast(leftim, kernelsize1, options);
-[Ar, br, cr] = make_Abc_fast(rightim, kernelsize1, options);
+[Al, bl, cl] = make_Abc_fast(leftim, kernelsize1, [], options);
+[Ar, br, cr] = make_Abc_fast(rightim, kernelsize1, [], options);
 
 A = (Al + Ar) / 2;
 b = -(bl - br) / 2;

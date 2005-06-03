@@ -23,7 +23,8 @@ function [A, b, c, params] = make_Abc_fast(signal, spatial_size, ...
 % region_of_interest [optional] - An Nx2 matrix where each row contains
 %                                 start and stop indices along the
 %                                 corresponding dimensions. Default value
-%                                 is all of the signal.
+%                                 is all of the signal. If an empty matrix
+%                                 is entered, the default is used.
 %
 % options [optional]            - Struct array that may contain various
 %                                 parameters that affect the algorithm.
@@ -92,7 +93,7 @@ elseif mod(spatial_size, 2) ~= 1
     warning(sprintf('Only kernels of odd size are allowed. Changed the size to %d.', spatial_size))
 end
 
-if nargin < 3
+if nargin < 3 || isempty(region_of_interest)
     if N == 1
 	region_of_interest = [1 size(signal, 1)];
     else
