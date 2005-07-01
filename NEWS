@@ -1,5 +1,7 @@
 2.1
 
+- New function antigradient to reconstruct a function from its
+  possibly noisy gradients.
 - Bugfixes in arrayloop.c.
 - Function handles and inline functions can be used in arrayloop.
 - Complex input can be used in arrayloop.

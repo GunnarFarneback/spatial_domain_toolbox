@@ -25,6 +25,8 @@ README                       this file
 COPYING                      GPL license text
 NEWS
 angular_error.m
+antigradient.c
+antigradient.m
 arrayloop.c
 arrayloop.m
 compute_displacement.m

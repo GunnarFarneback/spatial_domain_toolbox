@@ -1,3 +1,9 @@
+2005-07-01  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* antigradient.m: New function.
+
+	* antigradient.c: New function.
+
 2005-06-03  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* estimate_disparity.m: Calls to make_Abc_fast corrected.
