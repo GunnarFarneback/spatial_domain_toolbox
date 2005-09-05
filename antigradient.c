@@ -74,7 +74,7 @@ solve_directly2D(double *f, double *rhs,
 }
 
 
-/* Gauss-Seidel smoothing iteration. */
+/* Gauss-Seidel smoothing iteration. Red-black ordering. */
 void gauss_seidel2D(double *f, double *d, int M, int N)
 {
     int pass;
@@ -116,228 +116,447 @@ void gauss_seidel2D(double *f, double *d, int M, int N)
 }
 
 
-/* Gauss-Seidel smoothing only applied to odd boundary lines. */
-void gauss_seidel_odd_border2D(double *f, double *d, int M, int N)
-{
-    int pass;
-    int i, j;
-    int index;
-    
-    for (pass = 0; pass <= 1; pass++)
-    {
-	if (M % 2 == 1)
-	{
-	    i = M - 1;
-	    for (j = 0; j < N; j++)
-	    {
-		double new_f;
-		if (j % 2 != pass)
-		    continue;
-		
-		index = i + j * M;
-		new_f = -d[index];
-		new_f += 2.0 * f[index - 1];
-		
-		if (j == 0)
-		    new_f += f[index + M];
-		else
-		    new_f += f[index - M];
-		if (j == N-1)
-		    new_f += f[index - M];
-		else
-		    new_f += f[index + M];
-
-		f[index] = 0.25 * new_f;
-	    }
-	}
-	
-	if (N % 2 == 1)
-	{
-	    j = N - 1;
-	    for (i = 0; i < M; i++)
-	    {
-		double new_f;
-		if (i % 2 != pass)
-		    continue;
-
-		index = i + j * M;
-		new_f = -d[index];
-		if (i == 0)
-		    new_f += f[index + 1];
-		else
-		    new_f += f[index - 1];
-		if (i == M-1)
-		    new_f += f[index - 1];
-		else
-		    new_f += f[index + 1];
-		
-		new_f += 2.0 * f[index - M];
-
-		f[index] = 0.25 * new_f;
-	    }
-	}
-    }
-}
-
-
 void
 downsample2D(double *rhs, int M, int N,
 	     double *rhs_downsampled, int Mhalf, int Nhalf)
 {
     int i, j;
-    for (j = 0; j < Nhalf; j++)
+    int index1;
+    int index2;
+    
+    if (M % 2 == 0 && N % 2 == 0)
+    {
+	for (j = 0; j < Nhalf; j++)
+	    for (i = 0; i < Mhalf; i++)
+	    {
+		index1 = (j * Mhalf + i);
+		index2 = (2 * j * M + 2 * i);
+		
+		rhs_downsampled[index1] = (rhs[index2]
+					   + rhs[index2 + M]
+					   + rhs[index2 + 1]
+					   + rhs[index2 + M + 1]);
+	    }
+    }
+    
+    if (M % 2 == 1 && N % 2 == 0)
+    {
+	for (j = 0; j < Nhalf; j++)
+	{
+	    index1 = (j * Mhalf);
+	    index2 = (2 * j * M);
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 + M]
+				       + rhs[index2 + 1]
+				       + rhs[index2 + M + 1]);
+	    for (i = 1; i < Mhalf - 1; i++)
+	    {
+		index1++;
+		index2 += 2;
+		rhs_downsampled[index1] = (rhs[index2]
+					   + rhs[index2 + M]
+					   + 0.5 * (rhs[index2 - 1]
+						    + rhs[index2 + 1]
+						    + rhs[index2 + M - 1]
+						    + rhs[index2 + M + 1]));
+	    }
+	    index1++;
+	    index2 += 2;
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 + M]
+				       + rhs[index2 - 1]
+				       + rhs[index2 + M - 1]);
+	}
+    }
+    
+    if (M % 2 == 0 && N % 2 == 1)
+    {
 	for (i = 0; i < Mhalf; i++)
 	{
-	    int index1 = (j * Mhalf + i);
-	    int index2 = (2 * j * M + 2 * i);
+	    index1 = i;
+	    index2 = 2 * i;
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 + 1]
+				       + rhs[index2 + M]
+				       + rhs[index2 + M + 1]);
+	}
+	
+	for (j = 1; j < Nhalf - 1; j++)
+	{
+	    for (i = 0; i < Mhalf; i++)
+	    {
+		index1 = (j * Mhalf + i);
+		index2 = (2 * j * M + 2 * i);
+		rhs_downsampled[index1] = (rhs[index2]
+					   + rhs[index2 + 1]
+					   + 0.5 * (rhs[index2 - M]
+						    + rhs[index2 + M]
+						    + rhs[index2 - M + 1]
+						    + rhs[index2 + M + 1]));
+	    }
+	}
+	
+	for (i = 0; i < Mhalf; i++)
+	{
+	    index1 = (j * Mhalf + i);
+	    index2 = (2 * j * M + 2 * i);
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 + 1]
+				       + rhs[index2 - M]
+				       + rhs[index2 - M + 1]);
+	}
+    }
 
-	    if (2 * i == M - 1)
+    if (M % 2 == 1 && N % 2 == 1)
+    {
+	for (j = 1; j < Nhalf - 1; j++)
+	{
+	    for (i = 1; i < Mhalf - 1; i++)
 	    {
-		if (2 * j == N - 1)
-		    rhs_downsampled[index1] = (rhs[index2]
-					       + rhs[index2 - M]
-					       + rhs[index2 - 1]
-					       + rhs[index2 - M - 1]);
-		else
-		    rhs_downsampled[index1] = (rhs[index2]
-					       + rhs[index2 + M]
-					       + rhs[index2 - 1]
-					       + rhs[index2 + M - 1]);
+		index1 = (j * Mhalf + i);
+		index2 = (2 * j * M + 2 * i);
+		rhs_downsampled[index1] = (rhs[index2]
+					   + 0.5 * (rhs[index2 - 1]
+						    + rhs[index2 + 1]
+						    + rhs[index2 - M]
+						    + rhs[index2 + M])
+					   + 0.25* (rhs[index2 - M - 1]
+						    + rhs[index2 - M + 1]
+						    + rhs[index2 + M - 1]
+						    + rhs[index2 + M + 1]));
 	    }
-	    else
-	    {
-		if (2 * j == N - 1)
-		    rhs_downsampled[index1] = (rhs[index2]
-					       + rhs[index2 - M]
-					       + rhs[index2 + 1]
-					       + rhs[index2 - M + 1]);
-		else
-		    rhs_downsampled[index1] = (rhs[index2]
-					       + rhs[index2 + M]
-					       + rhs[index2 + 1]
-					       + rhs[index2 + M + 1]);
-	    }
-	}    
+	}
+
+	for (i = 1; i < Mhalf - 1; i++)
+	{
+	    index1 = i;
+	    index2 = 2 * i;
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 + M]
+				       + 0.5 * (rhs[index2 - 1]
+						+ rhs[index2 + 1]
+						+ rhs[index2 + M - 1]
+						+ rhs[index2 + M + 1]));
+	    index1 = ((Nhalf - 1) * Mhalf + i);
+	    index2 = (2 * (Nhalf - 1) * M + 2 * i);
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 - M]
+				       + 0.5 * (rhs[index2 - 1]
+						+ rhs[index2 + 1]
+						+ rhs[index2 - M - 1]
+						+ rhs[index2 - M + 1]));
+	}
+
+	for (j = 1; j < Nhalf - 1; j++)
+	{
+	    index1 = (j * Mhalf);
+	    index2 = (2 * j * M);
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 + 1]
+				       + 0.5 * (rhs[index2 - M]
+						+ rhs[index2 + M]
+						+ rhs[index2 - M + 1]
+						+ rhs[index2 + M + 1]));
+	    index1 = (j * Mhalf + Mhalf - 1);
+	    index2 = (2 * j * M + 2 * (Mhalf - 1));
+	    rhs_downsampled[index1] = (rhs[index2]
+				       + rhs[index2 - 1]
+				       + 0.5 * (rhs[index2 - M]
+						+ rhs[index2 + M]
+						+ rhs[index2 - M - 1]
+						+ rhs[index2 + M - 1]));
+	}
+
+	index1 = 0;
+	index2 = 0;
+	rhs_downsampled[index1] = (rhs[index2]
+				   + rhs[index2 + 1]
+				   + rhs[index2 + M]
+				   + rhs[index2 + M + 1]);
+
+    	index1 = (Nhalf - 1) * Mhalf;
+	index2 = 2 * (Nhalf - 1) * M;
+	rhs_downsampled[index1] = (rhs[index2]
+				   + rhs[index2 + 1]
+				   + rhs[index2 - M]
+				   + rhs[index2 - M + 1]);
+
+	index1 = (Mhalf - 1);
+	index2 = (2 * (Mhalf - 1));
+	rhs_downsampled[index1] = (rhs[index2]
+				   + rhs[index2 - 1]
+				   + rhs[index2 + M]
+				   + rhs[index2 + M - 1]);
+
+	index1 = ((Nhalf - 1) * Mhalf + Mhalf - 1);
+	index2 = (2 * (Nhalf - 1) * M + 2 * (Mhalf - 1));
+	rhs_downsampled[index1] = (rhs[index2]
+				   + rhs[index2 - 1]
+				   + rhs[index2 - M]
+				   + rhs[index2 - M - 1]);
+    }
 }
 
 
+/* Upsample and apply correction. Bilinear interpolation. */
 void
 upsample2D(double *rhs, int M, int N,
 	   double *v, int Mhalf, int Nhalf,
 	   double *f_out)
 {
-    int i, j;
-    
-    /* Upsample and apply correction. Bilinear interpolation. */
+  int i, j;
+  int index1, index2;
+  double ce, no, so, we, ea, nw, sw, ne, se;
+  int CE, NO, SO, WE, EA, SW, NE, SE;
+  
+  if (M % 2 == 0 && N % 2 == 0)
+  {
     for (j = 0; j < Nhalf; j++)
-	for (i = 0; i < Mhalf; i++)
+      for (i = 0; i < Mhalf; i++)
+      {
+	index1 = (j * Mhalf + i);
+	index2 = (2 * j * M + 2 * i);
+	ce = v[index1];
+	no = v[index1 - 1];
+	so = v[index1 + 1];
+	we = v[index1 - Mhalf];
+	ea = v[index1 + Mhalf];
+	nw = v[index1 - Mhalf - 1];
+	sw = v[index1 - Mhalf + 1];
+	ne = v[index1 + Mhalf - 1];
+	se = v[index1 + Mhalf + 1];
+	CE = index2;
+	SO = index2 + 1;
+	EA = index2 + M;
+	SE = index2 + M + 1;
+	
+	/* Fine pixels northwest of coarse pixel center. */
+	if (i == 0)
 	{
-	    int index1 = (j * Mhalf + i);
-	    int index2 = (2 * j * M + 2 * i);
-
-	    /* Fine pixels northwest of coarse pixel center. */
-	    if (i == 0)
-	    {
-		if (j == 0) /* NW corner. */
-		    f_out[index2] += v[index1] - 0.25 * rhs[index2];
-		else /* North edge. */
-		    f_out[index2] += (0.75 * v[index1]
-				      + 0.25 * v[index1 - Mhalf]
-				      - 0.25 * rhs[index2]);
-	    }
-	    else
-	    {
-		if (j == 0) /* West edge. */
-		    f_out[index2] += (0.75 * v[index1]
-				      + 0.25 * v[index1 - 1]
-				      - 0.25 * rhs[index2]);
-		else /* Inner point. */
-		    f_out[index2] += (0.5625 * v[index1]
-				      + 0.1875 * v[index1 - 1]
-				      + 0.1875 * v[index1 - Mhalf]
-				      + 0.0625 * v[index1 - Mhalf - 1]);
-	    }
-
-	    /* Fine pixels southwest of coarse pixel center.
-	     * These will only appear on the south edge if the
-	     * fine height is even.
-	     */
-	    if (2*i+1 == M-1)
-	    {
-		if (j == 0) /* SW corner. */
-		    f_out[index2 + 1] += v[index1] - 0.25 * rhs[index2 + 1];
-		else /* South edge. */
-		    f_out[index2 + 1] += (0.75 * v[index1]
-					  + 0.25 * v[index1 - Mhalf]
-					  - 0.25 * rhs[index2 + 1]);
-	    }
-	    else if (2*i+1 < M-1)
-	    {
-		if (j == 0) /* West edge. */
-		    f_out[index2 + 1] += (0.75 * v[index1]
-					  + 0.25 * v[index1 + 1]
-					  - 0.25 * rhs[index2 + 1]);
-		else /* Inner point. */
-		    f_out[index2 + 1] += (0.5625 * v[index1]
-					  + 0.1875 * v[index1 + 1]
-					  + 0.1875 * v[index1 - Mhalf]
-					  + 0.0625 * v[index1 - Mhalf + 1]);
-	    }
-	    
-	    /* Fine pixels northeast of coarse pixel center.
-	     * These will only appear on the east edge if the
-	     * fine width is even.
-	     */
-	    if (i == 0)
-	    {
-		if (2*j+1 == N-1) /* NE corner. */
-		    f_out[index2 + M] += v[index1] - 0.25 * rhs[index2 + M];
-		else if (2*j+1 < N-1) /* North edge. */
-		    f_out[index2 + M] += (0.75 * v[index1]
-					  + 0.25 * v[index1 + Mhalf]
-					  - 0.25 * rhs[index2 + M]);
-	    }
-	    else
-	    {
-		if (2*j+1 == N-1) /* East edge. */
-		    f_out[index2 + M] += (0.75 * v[index1]
-					  + 0.25 * v[index1 - 1]
-					  - 0.25 * rhs[index2 + M]);
-		else if (2*j+1 < N-1) /* Inner point. */
-		    f_out[index2 + M] += (0.5625 * v[index1]
-					  + 0.1875 * v[index1 - 1]
-					  + 0.1875 * v[index1 + Mhalf]
-					  + 0.0625 * v[index1 + Mhalf - 1]);
-	    }
-	    
-	    /* Fine pixels southeast of coarse pixel center.
-	     * These will only appear on the south edge if the fine
-	     * height is even and on the east edge if the fine width
-	     * is even.
-	     */
-	    if (2*i+1 == M-1)
-	    {
-		if (2*j+1 == N-1) /* SE corner. */
-		    f_out[index2 + M + 1] += (v[index1]
-					      - 0.25 * rhs[index2 + M + 1]);
-		else if (2*j+1 < N-1) /* South edge.*/
-		    f_out[index2 + M + 1] += (0.75 * v[index1]
-					      + 0.25 * v[index1 + Mhalf]
-					      - 0.25 * rhs[index2 + M + 1]);
-	    }
-	    else if (2*i+1 < M-1)
-	    {
-		if (2*j+1 == N-1) /* East edge. */
-		    f_out[index2 + M + 1] += (0.75 * v[index1]
-					      + 0.25 * v[index1 + 1]
-					      - 0.25 * rhs[index2 + M + 1]);
-		else if (2*j+1 < N-1) /* Inner point. */
-		    f_out[index2 + M + 1] += (0.5625 * v[index1]
-					      + 0.1875 * v[index1 + 1]
-					      + 0.1875 * v[index1 + Mhalf]
-					      + 0.0625 * v[index1 + Mhalf + 1]);
-	    }
+	  if (j == 0) /* NW corner. */
+	    f_out[CE] += ce - 0.25 * rhs[CE];
+	  else        /* North edge. */
+	    f_out[CE] += 0.75 * ce + 0.25 * (we - rhs[CE]);
 	}
+	else
+	{
+	  if (j == 0) /* West edge. */
+	    f_out[CE] += 0.75 * ce + 0.25 * (no - rhs[CE]);
+	  else        /* Inner point. */
+	    f_out[CE] += (0.5625 * ce + 0.1875 * (no + we) + 0.0625 * nw);
+	}
+	
+	/* Fine pixels southwest of coarse pixel center. */
+	if (i == Mhalf - 1)
+	{
+	  if (j == 0) /* SW corner. */
+	    f_out[SO] += ce - 0.25 * rhs[SO];
+	  else        /* South edge. */
+	    f_out[SO] += 0.75 * ce  + 0.25 * (we - rhs[SO]);
+	}
+	else
+	{
+	  if (j == 0) /* West edge. */
+	    f_out[SO] += 0.75 * ce + 0.25 * (so - rhs[SO]);
+	  else        /* Inner point. */
+	    f_out[SO] += 0.5625 * ce + 0.1875 * (so + we) + 0.0625 * sw;
+	}
+	
+	/* Fine pixels northeast of coarse pixel center. */
+	if (i == 0)
+	{
+	  if (j == Nhalf - 1) /* NE corner. */
+	    f_out[EA] += ce - 0.25 * rhs[EA];
+	  else              /* North edge. */
+	    f_out[EA] += 0.75 * ce + 0.25 * (ea - rhs[EA]);
+	}
+	else
+	{
+	  if (j == Nhalf - 1) /* East edge. */
+	    f_out[EA] += 0.75 * ce + 0.25 * (no - rhs[EA]);
+	  else              /* Inner point. */
+	    f_out[EA] += 0.5625 * ce + 0.1875 * (no + ea) + 0.0625 * ne;
+	}
+	
+	/* Fine pixels southeast of coarse pixel center. */
+	if (i == Mhalf - 1)
+	{
+	  if (j == Nhalf - 1) /* SE corner. */
+	    f_out[SE] += ce - 0.25 * rhs[SE];
+	  else              /* South edge.*/
+	    f_out[SE] += 0.75 * ce + 0.25 * (ea - rhs[SE]);
+	}
+	else
+	{
+	  if (j == Nhalf - 1) /* East edge. */
+	    f_out[SE] += 0.75 * ce + 0.25 * (so - rhs[SE]);
+	  else              /* Inner point. */
+	    f_out[SE] += 0.5625 * ce + 0.1875 * (so + ea) + 0.0625 * se;
+	}
+      }
+  }
+  else if (M % 2 == 1 && N % 2 == 0)
+  {
+    for (j = 0; j < Nhalf; j++)
+      for (i = 0; i < Mhalf; i++)
+      {
+	index1 = (j * Mhalf + i);
+	index2 = (2 * j * M + 2 * i);
+	ce = v[index1];
+	so = v[index1 + 1];
+	we = v[index1 - Mhalf];
+	ea = v[index1 + Mhalf];
+	sw = v[index1 - Mhalf + 1];
+	se = v[index1 + Mhalf + 1];
+	CE = index2;
+	SO = index2 + 1;
+	EA = index2 + M;
+	SE = index2 + M + 1;
+	NO = index2 - 1;
+	NE = index2 + M - 1;
+	
+	/* Fine pixels west of coarse pixel center. */
+	if (j == 0) /* West edge. */
+	{
+	  if (i == 0) /* NW corner */
+	    f_out[CE] += ce - 0.125 * (rhs[SO] + rhs[CE] - rhs[EA]);
+	  else if (i == Mhalf - 1) /* SW corner */
+	    f_out[CE] += ce - 0.125 * (rhs[NO] + rhs[CE] - rhs[EA]);
+	  else
+	    f_out[CE] += ce - 0.25 * rhs[CE];
+	}
+	else        /* Inner point. */
+	  f_out[CE] += 0.75 * ce + 0.25 * we;
+	
+	/* Fine pixels southsouthwest of coarse pixel center. */
+	if (i < Mhalf - 1)
+	{
+	  if (j == 0) /* West edge. */
+	    f_out[SO] += 0.5 * (ce + so) - 0.25 * rhs[SO];
+	  else        /* Inner point. */
+	    f_out[SO] += 0.375 * (ce + so) + 0.125 * (we + sw);
+	}
+	
+	/* Fine pixels east of coarse pixel center. */
+	if (j == Nhalf - 1) /* East edge. */
+	{
+	  if (i == 0) /* NE corner */
+	    f_out[EA] += ce - 0.125 * (rhs[SE] + rhs[EA] - rhs[CE]);
+	  else if (i == Mhalf - 1) /* SE corner */
+	    f_out[EA] += ce - 0.125 * (rhs[NE] + rhs[EA] - rhs[CE]);
+	  else
+	    f_out[EA] += ce - 0.25 * rhs[EA];
+	}
+	else          /* Inner point. */
+	  f_out[EA] += 0.75 * ce + 0.25 * ea;
+	
+	/* Fine pixels southsoutheast of coarse pixel center. */
+	if (i < Mhalf - 1)
+	{
+	  if (j == Nhalf - 1) /* East edge. */
+	    f_out[SE] += 0.5 * (ce + so) - 0.25 * rhs[SE];
+	  else                /* Inner point. */
+	    f_out[SE] += 0.375 * (ce + so) + 0.125 * (ea + se);
+	}
+      }
+  }
+  else if (M % 2 == 0 && N % 2 == 1)
+  {
+    for (j = 0; j < Nhalf; j++)
+      for (i = 0; i < Mhalf; i++)
+      {
+	index1 = (j * Mhalf + i);
+	index2 = (2 * j * M + 2 * i);
+	ce = v[index1];
+	so = v[index1 + 1];
+	no = v[index1 - 1];
+	ea = v[index1 + Mhalf];
+	se = v[index1 + Mhalf + 1];
+	ne = v[index1 + Mhalf - 1];
+	CE = index2;
+	SO = index2 + 1;
+	EA = index2 + M;
+	SE = index2 + M + 1;
+	WE = index2 - M;
+	SW = index2 - M + 1;
+	
+	/* Fine pixels north of coarse pixel center. */
+	if (i == 0) /* North edge. */
+	{
+	  if (j == 0) /* NW corner */
+	    f_out[CE] += ce - 0.125 * (rhs[EA] + rhs[CE] - rhs[SO]);
+	  else if (j == Nhalf - 1) /* NE corner */
+	    f_out[CE] += ce - 0.125 * (rhs[WE] + rhs[CE] - rhs[SO]);
+	  else
+	    f_out[CE] += ce - 0.25 * rhs[CE];
+	}
+	else        /* Inner point. */
+	  f_out[CE] += 0.75 * ce + 0.25 * no;
+	
+	/* Fine pixels eastnortheast of coarse pixel center. */
+	if (j < Nhalf - 1)
+	{
+	  if (i == 0) /* North edge. */
+	    f_out[EA] += 0.5 * (ce + ea) - 0.25 * rhs[EA];
+	  else        /* Inner point. */
+	    f_out[EA] += 0.375 * (ce + ea) + 0.125 * (no + ne);
+	}
+	
+	/* Fine pixels south of coarse pixel center. */
+	if (i == Mhalf - 1) /* South edge. */
+	{
+	  if (j == 0) /* SW corner */
+	    f_out[SO] += ce - 0.125 * (rhs[SE] + rhs[SO] - rhs[CE]);
+	  else if (j == Nhalf - 1) /* SE corner */
+	    f_out[SO] += ce - 0.125 * (rhs[SW] + rhs[SO] - rhs[CE]);
+	  else
+	    f_out[SO] += ce - 0.25 * rhs[SO];
+	}
+	else          /* Inner point. */
+	  f_out[SO] += 0.75 * ce + 0.25 * so;
+	
+	/* Fine pixels eastsoutheast of coarse pixel center. */
+	if (j < Nhalf - 1)
+	{
+	  if (i == Mhalf - 1) /* South edge. */
+	    f_out[SE] += 0.5 * (ce + ea) - 0.25 * rhs[SE];
+	  else                /* Inner point. */
+	    f_out[SE] += 0.375 * (ce + ea) + 0.125 * (so + se);
+	}
+      }
+  }
+  else if (M % 2 == 1 && N % 2 == 1)
+  {
+    for (j = 0; j < Nhalf; j++)
+      for (i = 0; i < Mhalf; i++)
+      {
+	index1 = (j * Mhalf + i);
+	index2 = (2 * j * M + 2 * i);
+	ce = v[index1];
+	so = v[index1 + 1];
+	ea = v[index1 + Mhalf];
+	se = v[index1 + Mhalf + 1];
+	CE = index2;
+	SO = index2 + 1;
+	EA = index2 + M;
+	SE = index2 + M + 1;
+	
+	/* Fine pixels on coarse pixel center. */
+	f_out[CE] += ce;
+	
+	/* Fine pixels south of coarse pixel center. */
+	if (i < Mhalf - 1)
+	  f_out[SO] += 0.5 * (ce + so);
+	
+	/* Fine pixels east of coarse pixel center. */
+	if (j < Nhalf - 1) /* South edge. */
+	  f_out[EA] += 0.5 * (ce + ea);
+	
+	/* Fine pixels southeast of coarse pixel center. */
+	if (i < Mhalf - 1 && j < Nhalf - 1)
+	  f_out[SE] += 0.25 * (ce + ea + so + se);
+      }
+  }
 }
 
 
@@ -421,13 +640,6 @@ poisson_multigrid2D(double *f, double *d,
 
     upsample2D(r, M, N, v, Mhalf, Nhalf, f_out);
 
-    /* Post-smoothing for odd border lines. */
-    if (M % 2 == 1 || N % 2 == 1)
-    {
-	for (k = 0; k < n2 + 2; k++)
-	    gauss_seidel_odd_border2D(f_out, d, M, N);
-    }
-    
     /* Post-smoothing. */
     for (k = 0; k < n2; k++)
 	gauss_seidel2D(f_out, d, M, N);
@@ -596,7 +808,7 @@ solve_directly3D(double *f, double *rhs,
 }
 
 
-/* Gauss-Seidel smoothing iteration. */
+/* Gauss-Seidel smoothing iteration. Red-black ordering. */
 void gauss_seidel3D(double *f, double *d, int M, int N, int P)
 {
     int pass;
