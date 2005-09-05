@@ -118,7 +118,7 @@ gauss_seidel2D(double *f, double *d, int M, int N)
 
 void
 downsample2D(double *rhs, int M, int N,
-	     double *rhs_downsampled, int Mhalf, int Nhalf)
+	     double *rhs_coarse, int Mhalf, int Nhalf)
 {
   int i, j;
   int index1;
@@ -132,10 +132,10 @@ downsample2D(double *rhs, int M, int N,
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
 	
-	rhs_downsampled[index1] = (rhs[index2]
-				   + rhs[index2 + M]
-				   + rhs[index2 + 1]
-				   + rhs[index2 + M + 1]);
+	rhs_coarse[index1] = (rhs[index2]
+			      + rhs[index2 + M]
+			      + rhs[index2 + 1]
+			      + rhs[index2 + M + 1]);
       }
   }
   
@@ -145,27 +145,27 @@ downsample2D(double *rhs, int M, int N,
     {
       index1 = (j * Mhalf);
       index2 = (2 * j * M);
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 + M]
-				 + rhs[index2 + 1]
-				 + rhs[index2 + M + 1]);
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 + M]
+			    + rhs[index2 + 1]
+			    + rhs[index2 + M + 1]);
       for (i = 1; i < Mhalf - 1; i++)
       {
 	index1++;
 	index2 += 2;
-	rhs_downsampled[index1] = (rhs[index2]
-				   + rhs[index2 + M]
-				   + 0.5 * (rhs[index2 - 1]
-					    + rhs[index2 + 1]
-					    + rhs[index2 + M - 1]
-					    + rhs[index2 + M + 1]));
+	rhs_coarse[index1] = (rhs[index2]
+			      + rhs[index2 + M]
+			      + 0.5 * (rhs[index2 - 1]
+				       + rhs[index2 + 1]
+				       + rhs[index2 + M - 1]
+				       + rhs[index2 + M + 1]));
       }
       index1++;
       index2 += 2;
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 + M]
-				 + rhs[index2 - 1]
-				 + rhs[index2 + M - 1]);
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 + M]
+			    + rhs[index2 - 1]
+			    + rhs[index2 + M - 1]);
     }
   }
   
@@ -175,10 +175,10 @@ downsample2D(double *rhs, int M, int N,
     {
       index1 = i;
       index2 = 2 * i;
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 + 1]
-				 + rhs[index2 + M]
-				 + rhs[index2 + M + 1]);
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 + 1]
+			    + rhs[index2 + M]
+			    + rhs[index2 + M + 1]);
     }
     
     for (j = 1; j < Nhalf - 1; j++)
@@ -187,12 +187,12 @@ downsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	rhs_downsampled[index1] = (rhs[index2]
-				   + rhs[index2 + 1]
-				   + 0.5 * (rhs[index2 - M]
-					    + rhs[index2 + M]
-					    + rhs[index2 - M + 1]
-					    + rhs[index2 + M + 1]));
+	rhs_coarse[index1] = (rhs[index2]
+			      + rhs[index2 + 1]
+			      + 0.5 * (rhs[index2 - M]
+				       + rhs[index2 + M]
+				       + rhs[index2 - M + 1]
+				       + rhs[index2 + M + 1]));
       }
     }
     
@@ -200,10 +200,10 @@ downsample2D(double *rhs, int M, int N,
     {
       index1 = (j * Mhalf + i);
       index2 = (2 * j * M + 2 * i);
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 + 1]
-				 + rhs[index2 - M]
-				 + rhs[index2 - M + 1]);
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 + 1]
+			    + rhs[index2 - M]
+			    + rhs[index2 - M + 1]);
     }
   }
   
@@ -215,15 +215,15 @@ downsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	rhs_downsampled[index1] = (rhs[index2]
-				   + 0.5 * (rhs[index2 - 1]
-					    + rhs[index2 + 1]
-					    + rhs[index2 - M]
-					    + rhs[index2 + M])
-				   + 0.25* (rhs[index2 - M - 1]
-					    + rhs[index2 - M + 1]
-					    + rhs[index2 + M - 1]
-					    + rhs[index2 + M + 1]));
+	rhs_coarse[index1] = (rhs[index2]
+			      + 0.5 * (rhs[index2 - 1]
+				       + rhs[index2 + 1]
+				       + rhs[index2 - M]
+				       + rhs[index2 + M])
+			      + 0.25* (rhs[index2 - M - 1]
+				       + rhs[index2 - M + 1]
+				       + rhs[index2 + M - 1]
+				       + rhs[index2 + M + 1]));
       }
     }
     
@@ -231,69 +231,69 @@ downsample2D(double *rhs, int M, int N,
     {
       index1 = i;
       index2 = 2 * i;
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 + M]
-				 + 0.5 * (rhs[index2 - 1]
-					  + rhs[index2 + 1]
-					  + rhs[index2 + M - 1]
-					  + rhs[index2 + M + 1]));
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 + M]
+			    + 0.5 * (rhs[index2 - 1]
+				     + rhs[index2 + 1]
+				     + rhs[index2 + M - 1]
+				     + rhs[index2 + M + 1]));
       index1 = ((Nhalf - 1) * Mhalf + i);
       index2 = (2 * (Nhalf - 1) * M + 2 * i);
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 - M]
-				 + 0.5 * (rhs[index2 - 1]
-					  + rhs[index2 + 1]
-					  + rhs[index2 - M - 1]
-					  + rhs[index2 - M + 1]));
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 - M]
+			    + 0.5 * (rhs[index2 - 1]
+				     + rhs[index2 + 1]
+				     + rhs[index2 - M - 1]
+				     + rhs[index2 - M + 1]));
     }
     
     for (j = 1; j < Nhalf - 1; j++)
     {
       index1 = (j * Mhalf);
       index2 = (2 * j * M);
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 + 1]
-				 + 0.5 * (rhs[index2 - M]
-					  + rhs[index2 + M]
-					  + rhs[index2 - M + 1]
-					  + rhs[index2 + M + 1]));
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 + 1]
+			    + 0.5 * (rhs[index2 - M]
+				     + rhs[index2 + M]
+				     + rhs[index2 - M + 1]
+				     + rhs[index2 + M + 1]));
       index1 = (j * Mhalf + Mhalf - 1);
       index2 = (2 * j * M + 2 * (Mhalf - 1));
-      rhs_downsampled[index1] = (rhs[index2]
-				 + rhs[index2 - 1]
-				 + 0.5 * (rhs[index2 - M]
-					  + rhs[index2 + M]
-					  + rhs[index2 - M - 1]
-					  + rhs[index2 + M - 1]));
+      rhs_coarse[index1] = (rhs[index2]
+			    + rhs[index2 - 1]
+			    + 0.5 * (rhs[index2 - M]
+				     + rhs[index2 + M]
+				     + rhs[index2 - M - 1]
+				     + rhs[index2 + M - 1]));
     }
     
     index1 = 0;
     index2 = 0;
-    rhs_downsampled[index1] = (rhs[index2]
-			       + rhs[index2 + 1]
-			       + rhs[index2 + M]
-			       + rhs[index2 + M + 1]);
+    rhs_coarse[index1] = (rhs[index2]
+			  + rhs[index2 + 1]
+			  + rhs[index2 + M]
+			  + rhs[index2 + M + 1]);
     
     index1 = (Nhalf - 1) * Mhalf;
     index2 = 2 * (Nhalf - 1) * M;
-    rhs_downsampled[index1] = (rhs[index2]
-			       + rhs[index2 + 1]
-			       + rhs[index2 - M]
-			       + rhs[index2 - M + 1]);
+    rhs_coarse[index1] = (rhs[index2]
+			  + rhs[index2 + 1]
+			  + rhs[index2 - M]
+			  + rhs[index2 - M + 1]);
     
     index1 = (Mhalf - 1);
     index2 = (2 * (Mhalf - 1));
-    rhs_downsampled[index1] = (rhs[index2]
-			       + rhs[index2 - 1]
-			       + rhs[index2 + M]
-			       + rhs[index2 + M - 1]);
+    rhs_coarse[index1] = (rhs[index2]
+			  + rhs[index2 - 1]
+			  + rhs[index2 + M]
+			  + rhs[index2 + M - 1]);
     
     index1 = ((Nhalf - 1) * Mhalf + Mhalf - 1);
     index2 = (2 * (Nhalf - 1) * M + 2 * (Mhalf - 1));
-    rhs_downsampled[index1] = (rhs[index2]
-			       + rhs[index2 - 1]
-			       + rhs[index2 - M]
-			       + rhs[index2 - M - 1]);
+    rhs_coarse[index1] = (rhs[index2]
+			  + rhs[index2 - 1]
+			  + rhs[index2 - M]
+			  + rhs[index2 - M - 1]);
   }
 }
 
@@ -395,7 +395,8 @@ upsample2D(double *rhs, int M, int N,
 	}
       }
   }
-  else if (M % 2 == 1 && N % 2 == 0)
+  
+  if (M % 2 == 1 && N % 2 == 0)
   {
     for (j = 0; j < Nhalf; j++)
       for (i = 0; i < Mhalf; i++)
@@ -460,7 +461,8 @@ upsample2D(double *rhs, int M, int N,
 	}
       }
   }
-  else if (M % 2 == 0 && N % 2 == 1)
+  
+  if (M % 2 == 0 && N % 2 == 1)
   {
     for (j = 0; j < Nhalf; j++)
       for (i = 0; i < Mhalf; i++)
@@ -525,7 +527,8 @@ upsample2D(double *rhs, int M, int N,
 	}
       }
   }
-  else if (M % 2 == 1 && N % 2 == 1)
+  
+  if (M % 2 == 1 && N % 2 == 1)
   {
     for (j = 0; j < Nhalf; j++)
       for (i = 0; i < Mhalf; i++)
