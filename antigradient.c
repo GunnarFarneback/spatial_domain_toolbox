@@ -864,771 +864,3185 @@ gauss_seidel3D(double *f, double *d, int M, int N, int P)
   }
 }
 
-
-/* Gauss-Seidel smoothing only applied to odd boundary surfaces. */
 void
-gauss_seidel_odd_border3D(double *f, double *d, int M, int N, int P)
+downsample3D(double *rhs, int M, int N, int P,
+             double *rhs_coarse, int Mhalf, int Nhalf, int Phalf)
 {
-  int pass;
   int i, j, p;
-  int index;
+  int index1;
+  int index2;
   int MN = M * N;
   
-  for (pass = 0; pass <= 1; pass++)
+  if (M % 2 == 0 && N % 2 == 0 && P % 2 == 0)
   {
-    if (M % 2 == 1)
+    for (p = 0; p < Phalf; p++)
     {
-      i = M - 1;
-      for (p = 0; p < P; p++)
-	for (j = 0; j < N; j++)
-	{
-	  double new_f;
-	  if ((j + p) % 2 != pass)
-	    continue;
-	  
-	  index = (p * N + j) * M + i;
-	  new_f = -d[index];
-	  new_f += 2.0 * f[index - 1];
-	  
-	  if (j == 0)
-	    new_f += f[index + M];
-	  else
-	    new_f += f[index - M];
-	  if (j == N-1)
-	    new_f += f[index - M];
-	  else
-	    new_f += f[index + M];
-	  
-	  if (p == 0)
-	    new_f += f[index + MN];
-	  else
-	    new_f += f[index - MN];
-	  if (p == P-1)
-	    new_f += f[index - MN];
-	  else
-	    new_f += f[index + MN];
-	  
-	  f[index] = (1 / 6.0) * new_f;
-	}
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + 1]
+                                       + rhs[index2 + M]
+                                       + rhs[index2 + M + 1]
+                                       + rhs[index2 + MN]
+                                       + rhs[index2 + MN + 1]
+                                       + rhs[index2 + MN + M]
+                                       + rhs[index2 + MN + M + 1]));
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 0 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        index1 = (p * Nhalf + j) * Mhalf + 0;
+        index2 = (2 * p * N + 2 * j) * M + 2 * 0;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M + 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + 1]
+                                     + rhs[index2 + MN + M]
+                                     + rhs[index2 + MN + M + 1]));
+        
+        for (i = 1; i < Mhalf - 1; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + M]
+                                       + rhs[index2 + MN]
+                                       + rhs[index2 + MN + M])
+                                + 0.25 * (rhs[index2 + 1]
+                                          + rhs[index2 - 1]
+                                          + rhs[index2 + M + 1]
+                                          + rhs[index2 + M - 1]
+                                          + rhs[index2 + MN + 1]
+                                          + rhs[index2 + MN - 1]
+                                          + rhs[index2 + MN + M + 1]
+                                          + rhs[index2 + MN + M - 1]));
+        }
+        
+        index1 = (p * Nhalf + j) * Mhalf + (Mhalf - 1);
+        index2 = (2 * p * N + 2 * j) * M + 2 * (Mhalf - 1);
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M - 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN - 1]
+                                     + rhs[index2 + MN + M]
+                                     + rhs[index2 + MN + M - 1]));
+      }
+    }
+  }
+  
+  if (M % 2 == 0 && N % 2 == 1 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = (p * Nhalf + 0) * Mhalf + i;
+        index2 = (2 * p * N + 2 * 0) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M + 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + 1]
+                                     + rhs[index2 + MN + M]
+                                     + rhs[index2 + MN + M + 1]));
+      }
+      
+      for (j = 1; j < Nhalf - 1; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + 1]
+                                       + rhs[index2 + MN]
+                                       + rhs[index2 + MN + 1])
+                                + 0.25 * (rhs[index2 + M]
+                                          + rhs[index2 + M + 1]
+                                          + rhs[index2 - M]
+                                          + rhs[index2 - M + 1]
+                                          + rhs[index2 + MN + M]
+                                          + rhs[index2 + MN + M + 1]
+                                          + rhs[index2 + MN - M]
+                                          + rhs[index2 + MN - M + 1]));
+        }
+      }
+      
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + i;
+        index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 - M]
+                                     + rhs[index2 - M + 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + 1]
+                                     + rhs[index2 + MN - M]
+                                     + rhs[index2 + MN - M + 1]));
+      }
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 1 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      index1 = (p * Nhalf + 0) * Mhalf + 0;
+      index2 = (2 * p * N + 2 * 0) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M + 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + 1]
+                                   + rhs[index2 + MN + M]
+                                   + rhs[index2 + MN + M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = (p * Nhalf + 0) * Mhalf + i;
+        index2 = (2 * p * N + 2 * 0) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + M])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 + M - 1]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN - 1]
+                                        + rhs[index2 + MN + M + 1]
+                                        + rhs[index2 + MN + M - 1]));
+      }
+      
+      index1 = (p * Nhalf + 0) * Mhalf + (Mhalf - 1);
+      index2 = (2 * p * N + 2 * 0) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M - 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN - 1]
+                                   + rhs[index2 + MN + M]
+                                   + rhs[index2 + MN + M - 1]));
+      
+      for (j = 1; j < Nhalf - 1; j++)
+      {
+        index1 = (p * Nhalf + j) * Mhalf + 0;
+        index2 = (2 * p * N + 2 * j) * M + 2 * 0;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + 1])
+                              + 0.25 * (rhs[index2 + M]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - M + 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN + M + 1]
+                                        + rhs[index2 + MN - M]
+                                        + rhs[index2 + MN - M + 1]));
+        
+        for (i = 1; i < Mhalf - 1; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + MN])
+                                + 0.25 * (rhs[index2 + 1]
+                                          + rhs[index2 - 1]
+                                          + rhs[index2 + M]
+                                          + rhs[index2 - M]
+                                          + rhs[index2 + MN + 1]
+                                          + rhs[index2 + MN - 1]
+                                          + rhs[index2 + MN + M]
+                                          + rhs[index2 + MN - M])
+                                + 0.125 * (rhs[index2 + M + 1]
+                                           + rhs[index2 + M - 1]
+                                           + rhs[index2 - M + 1]
+                                           + rhs[index2 - M - 1]
+                                           + rhs[index2 + MN + M + 1]
+                                           + rhs[index2 + MN + M - 1]
+                                           + rhs[index2 + MN - M + 1]
+                                           + rhs[index2 + MN - M - 1]));
+        }
+        
+        index1 = (p * Nhalf + j) * Mhalf + (Mhalf - 1);
+        index2 = (2 * p * N + 2 * j) * M + 2 * (Mhalf - 1);
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN - 1])
+                              + 0.25 * (rhs[index2 + M]
+                                        + rhs[index2 + M - 1]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - M - 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN + M - 1]
+                                        + rhs[index2 + MN - M]
+                                        + rhs[index2 + MN - M - 1]));
+      }
+      
+      index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + 0;
+      index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - M + 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + 1]
+                                   + rhs[index2 + MN - M]
+                                   + rhs[index2 + MN - M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + i;
+        index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - M]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN - M])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 - M + 1]
+                                        + rhs[index2 - M - 1]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN - 1]
+                                        + rhs[index2 + MN - M + 1]
+                                        + rhs[index2 + MN - M - 1]));
+      }
+      
+      index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + (Mhalf - 1);
+      index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - M - 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN - 1]
+                                   + rhs[index2 + MN - M]
+                                   + rhs[index2 + MN - M - 1]));
+    }
+  }
+  
+  if (M % 2 == 0 && N % 2 == 0 && P % 2 == 1)
+  {
+    for (j = 0; j < Nhalf; j++)
+    {
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = (0 * Nhalf + j) * Mhalf + i;
+        index2 = (2 * 0 * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M + 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + 1]
+                                     + rhs[index2 + MN + M]
+                                     + rhs[index2 + MN + M + 1]));
+      }
     }
     
-    if (N % 2 == 1)
+    for (p = 1; p < Phalf - 1; p++)
     {
-      j = N - 1;
-      for (p = 0; p < P; p++)
-	for (i = 0; i < M; i++)
-	{
-	  double new_f;
-	  if ((i + p) % 2 != pass)
-	    continue;
-	  
-	  index = (p * N + j) * M + i;
-	  new_f = -d[index];
-	  if (i == 0)
-	    new_f += f[index + 1];
-	  else
-	    new_f += f[index - 1];
-	  if (i == M-1)
-	    new_f += f[index - 1];
-	  else
-	    new_f += f[index + 1];
-	  
-	  new_f += 2.0 * f[index - M];
-	  
-	  if (p == 0)
-	    new_f += f[index + MN];
-	  else
-	    new_f += f[index - MN];
-	  if (p == P-1)
-	    new_f += f[index - MN];
-	  else
-	    new_f += f[index + MN];
-	  
-	  f[index] = (1 / 6.0) * new_f;
-	}
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + 1]
+                                       + rhs[index2 + M]
+                                       + rhs[index2 + M + 1])
+                                + 0.25 * (rhs[index2 + MN]
+                                          + rhs[index2 + MN + 1]
+                                          + rhs[index2 + MN + M]
+                                          + rhs[index2 + MN + M + 1]
+                                          + rhs[index2 - MN]
+                                          + rhs[index2 - MN + 1]
+                                          + rhs[index2 - MN + M]
+                                          + rhs[index2 - MN + M + 1]));
+        }
+      }
     }
     
-    if (P % 2 == 1)
+    for (j = 0; j < Nhalf; j++)
     {
-      p = P - 1;
-      for (j = 0; j < N; j++)
-	for (i = 0; i < M; i++)
-	{
-	  double new_f;
-	  if ((i + j) % 2 != pass)
-	    continue;
-	  
-	  index = (p * N + j) * M + i;
-	  new_f = -d[index];
-	  if (i == 0)
-	    new_f += f[index + 1];
-	  else
-	    new_f += f[index - 1];
-	  if (i == M-1)
-	    new_f += f[index - 1];
-	  else
-	    new_f += f[index + 1];
-	  
-	  if (j == 0)
-	    new_f += f[index + M];
-	  else
-	    new_f += f[index - M];
-	  if (j == N-1)
-	    new_f += f[index - M];
-	  else
-	    new_f += f[index + M];
-	  
-	  new_f += 2.0 * f[index - MN];
-	  
-	  f[index] = (1 / 6.0) * new_f;
-	}
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + i;
+        index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M + 1]
+                                     + rhs[index2 - MN]
+                                     + rhs[index2 - MN + 1]
+                                     + rhs[index2 - MN + M]
+                                     + rhs[index2 - MN + M + 1]));
+      }
     }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 0 && P % 2 == 1)
+  {
+    for (j = 0; j < Nhalf; j++)
+    {
+      index1 = (0 * Nhalf + j) * Mhalf + 0;
+      index2 = (2 * 0 * N + 2 * j) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M + 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + 1]
+                                   + rhs[index2 + MN + M]
+                                   + rhs[index2 + MN + M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = (0 * Nhalf + j) * Mhalf + i;
+        index2 = (2 * 0 * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + M])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 + M - 1]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN - 1]
+                                        + rhs[index2 + MN + M + 1]
+                                        + rhs[index2 + MN + M - 1]));
+      }
+      
+      index1 = (0 * Nhalf + j) * Mhalf + (Mhalf - 1);
+      index2 = (2 * 0 * N + 2 * j) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M - 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN - 1]
+                                   + rhs[index2 + MN + M]
+                                   + rhs[index2 + MN + M - 1]));
+    }
+    
+    for (p = 1; p < Phalf - 1; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        index1 = (p * Nhalf + j) * Mhalf + 0;
+        index2 = (2 * p * N + 2 * j) * M + 2 * 0;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M + 1])
+                              + 0.25 * (rhs[index2 + MN]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN + M + 1]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN + 1]
+                                        + rhs[index2 - MN + M]
+                                        + rhs[index2 - MN + M + 1]));
+        
+        for (i = 1; i < Mhalf - 1; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + M])
+                                + 0.25 * (rhs[index2 + 1]
+                                          + rhs[index2 - 1]
+                                          + rhs[index2 + M + 1]
+                                          + rhs[index2 + M - 1]
+                                          + rhs[index2 + MN]
+                                          + rhs[index2 + MN + M]
+                                          + rhs[index2 - MN]
+                                          + rhs[index2 - MN + M])
+                                + 0.125 * (rhs[index2 + MN + 1]
+                                           + rhs[index2 + MN - 1]
+                                           + rhs[index2 + MN + M + 1]
+                                           + rhs[index2 + MN + M - 1]
+                                           + rhs[index2 - MN + 1]
+                                           + rhs[index2 - MN - 1]
+                                           + rhs[index2 - MN + M + 1]
+                                           + rhs[index2 - MN + M - 1]));
+        }
+        
+        index1 = (p * Nhalf + j) * Mhalf + (Mhalf - 1);
+        index2 = (2 * p * N + 2 * j) * M + 2 * (Mhalf - 1);
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M - 1])
+                              + 0.25 * (rhs[index2 + MN]
+                                        + rhs[index2 + MN - 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN + M - 1]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN - 1]
+                                        + rhs[index2 - MN + M]
+                                        + rhs[index2 - MN + M - 1]));
+      }
+    }
+    
+    for (j = 0; j < Nhalf; j++)
+    {
+      index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + 0;
+      index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M + 1]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN + 1]
+                                   + rhs[index2 - MN + M]
+                                   + rhs[index2 - MN + M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + i;
+        index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 - MN]
+                                     + rhs[index2 - MN + M])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 + M - 1]
+                                        + rhs[index2 - MN + 1]
+                                        + rhs[index2 - MN - 1]
+                                        + rhs[index2 - MN + M + 1]
+                                        + rhs[index2 - MN + M - 1]));
+      }
+      
+      index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + (Mhalf - 1);
+      index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M - 1]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN - 1]
+                                   + rhs[index2 - MN + M]
+                                   + rhs[index2 - MN + M - 1]));
+    }
+  }
+  
+  if (M % 2 == 0 && N % 2 == 1 && P % 2 == 1)
+  {
+    for (i = 0; i < Mhalf; i++)
+    {
+      index1 = (0 * Nhalf + 0) * Mhalf + i;
+      index2 = (2 * 0 * N + 2 * 0) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M + 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + 1]
+                                   + rhs[index2 + MN + M]
+                                   + rhs[index2 + MN + M + 1]));
+    }
+    
+    for (j = 1; j < Nhalf - 1; j++)
+    {
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = (0 * Nhalf + j) * Mhalf + i;
+        index2 = (2 * 0 * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + MN]
+                                     + rhs[index2 + MN + 1])
+                              + 0.25 * (rhs[index2 + M]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - M + 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN + M + 1]
+                                        + rhs[index2 + MN - M]
+                                        + rhs[index2 + MN - M + 1]));
+      }
+    }
+    
+    for (i = 0; i < Mhalf; i++)
+    {
+      index1 = (0 * Nhalf + (Nhalf - 1)) * Mhalf + i;
+      index2 = (2 * 0 * N + 2 * (Nhalf - 1)) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - M + 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + 1]
+                                   + rhs[index2 + MN - M]
+                                   + rhs[index2 + MN - M + 1]));
+    }
+    
+    for (p = 1; p < Phalf - 1; p++)
+    {
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = (p * Nhalf + 0) * Mhalf + i;
+        index2 = (2 * p * N + 2 * 0) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 + M]
+                                     + rhs[index2 + M + 1])
+                              + 0.25 * (rhs[index2 + MN]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN + M + 1]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN + 1]
+                                        + rhs[index2 - MN + M]
+                                        + rhs[index2 - MN + M + 1]));
+      }
+      
+      for (j = 1; j < Nhalf - 1; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                       + rhs[index2 + 1])
+                                + 0.25 * (rhs[index2 + M]
+                                          + rhs[index2 + M + 1]
+                                          + rhs[index2 - M]
+                                          + rhs[index2 - M + 1]
+                                          + rhs[index2 + MN]
+                                          + rhs[index2 + MN + 1]
+                                          + rhs[index2 - MN]
+                                          + rhs[index2 - MN + 1])
+                                + 0.125 * (rhs[index2 + MN + M]
+                                           + rhs[index2 + MN + M + 1]
+                                           + rhs[index2 + MN - M]
+                                           + rhs[index2 + MN - M + 1]
+                                           + rhs[index2 - MN + M]
+                                           + rhs[index2 - MN + M + 1]
+                                           + rhs[index2 - MN - M]
+                                           + rhs[index2 - MN - M + 1]));
+        }
+      }
+      
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + i;
+        index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 - M]
+                                     + rhs[index2 - M + 1])
+                              + 0.25 * (rhs[index2 + MN]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN - M]
+                                        + rhs[index2 + MN - M + 1]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN + 1]
+                                        + rhs[index2 - MN - M]
+                                        + rhs[index2 - MN - M + 1]));
+      }
+    }
+    
+    for (i = 0; i < Mhalf; i++)
+    {
+      index1 = ((Phalf - 1) * Nhalf + 0) * Mhalf + i;
+      index2 = (2 * (Phalf - 1) * N + 2 * 0) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M + 1]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN + 1]
+                                   + rhs[index2 - MN + M]
+                                   + rhs[index2 - MN + M + 1]));
+    }
+    
+    for (j = 1; j < Nhalf - 1; j++)
+    {
+      for (i = 0; i < Mhalf; i++)
+      {
+        index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + i;
+        index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1]
+                                     + rhs[index2 - MN]
+                                     + rhs[index2 - MN + 1])
+                              + 0.25 * (rhs[index2 + M]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - M + 1]
+                                        + rhs[index2 - MN + M]
+                                        + rhs[index2 - MN + M + 1]
+                                        + rhs[index2 - MN - M]
+                                        + rhs[index2 - MN - M + 1]));
+      }
+    }
+    
+    for (i = 0; i < Mhalf; i++)
+    {
+      index1 = ((Phalf - 1) * Nhalf + (Nhalf - 1)) * Mhalf + i;
+      index2 = (2 * (Phalf - 1) * N + 2 * (Nhalf - 1)) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - M + 1]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN + 1]
+                                   + rhs[index2 - MN - M]
+                                   + rhs[index2 - MN - M + 1]));
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 1 && P % 2 == 1)
+  {
+    index1 = (0 * Nhalf + 0) * Mhalf + 0;
+    index2 = (2 * 0 * N + 2 * 0) * M + 2 * 0;
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 + 1]
+                                 + rhs[index2 + M]
+                                 + rhs[index2 + M + 1]
+                                 + rhs[index2 + MN]
+                                 + rhs[index2 + MN + 1]
+                                 + rhs[index2 + MN + M]
+                                 + rhs[index2 + MN + M + 1]));
+    
+    for (i = 1; i < Mhalf - 1; i++)
+    {
+      index1 = (0 * Nhalf + 0) * Mhalf + i;
+      index2 = (2 * 0 * N + 2 * 0) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + M])
+                            + 0.25 * (rhs[index2 + 1]
+                                      + rhs[index2 - 1]
+                                      + rhs[index2 + M + 1]
+                                      + rhs[index2 + M - 1]
+                                      + rhs[index2 + MN + 1]
+                                      + rhs[index2 + MN - 1]
+                                      + rhs[index2 + MN + M + 1]
+                                      + rhs[index2 + MN + M - 1]));
+    }
+    
+    index1 = (0 * Nhalf + 0) * Mhalf + (Mhalf - 1);
+    index2 = (2 * 0 * N + 2 * 0) * M + 2 * (Mhalf - 1);
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 - 1]
+                                 + rhs[index2 + M]
+                                 + rhs[index2 + M - 1]
+                                 + rhs[index2 + MN]
+                                 + rhs[index2 + MN - 1]
+                                 + rhs[index2 + MN + M]
+                                 + rhs[index2 + MN + M - 1]));
+    
+    for (j = 1; j < Nhalf - 1; j++)
+    {
+      index1 = (0 * Nhalf + j) * Mhalf + 0;
+      index2 = (2 * 0 * N + 2 * j) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN + 1])
+                            + 0.25 * (rhs[index2 + M]
+                                      + rhs[index2 + M + 1]
+                                      + rhs[index2 - M]
+                                      + rhs[index2 - M + 1]
+                                      + rhs[index2 + MN + M]
+                                      + rhs[index2 + MN + M + 1]
+                                      + rhs[index2 + MN - M]
+                                      + rhs[index2 + MN - M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = (0 * Nhalf + j) * Mhalf + i;
+        index2 = (2 * 0 * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + MN])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 + M]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 + MN - 1]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 + MN - M])
+                              + 0.125 * (rhs[index2 + M + 1]
+                                         + rhs[index2 + M - 1]
+                                         + rhs[index2 - M + 1]
+                                         + rhs[index2 - M - 1]
+                                         + rhs[index2 + MN + M + 1]
+                                         + rhs[index2 + MN + M - 1]
+                                         + rhs[index2 + MN - M + 1]
+                                         + rhs[index2 + MN - M - 1]));
+      }
+      
+      index1 = (0 * Nhalf + j) * Mhalf + (Mhalf - 1);
+      index2 = (2 * 0 * N + 2 * j) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN - 1])
+                            + 0.25 * (rhs[index2 + M]
+                                      + rhs[index2 + M - 1]
+                                      + rhs[index2 - M]
+                                      + rhs[index2 - M - 1]
+                                      + rhs[index2 + MN + M]
+                                      + rhs[index2 + MN + M - 1]
+                                      + rhs[index2 + MN - M]
+                                      + rhs[index2 + MN - M - 1]));
+    }
+    
+    index1 = (0 * Nhalf + (Nhalf - 1)) * Mhalf + 0;
+    index2 = (2 * 0 * N + 2 * (Nhalf - 1)) * M + 2 * 0;
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 + 1]
+                                 + rhs[index2 - M]
+                                 + rhs[index2 - M + 1]
+                                 + rhs[index2 + MN]
+                                 + rhs[index2 + MN + 1]
+                                 + rhs[index2 + MN - M]
+                                 + rhs[index2 + MN - M + 1]));
+    
+    for (i = 1; i < Mhalf - 1; i++)
+    {
+      index1 = (0 * Nhalf + (Nhalf - 1)) * Mhalf + i;
+      index2 = (2 * 0 * N + 2 * (Nhalf - 1)) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 + MN]
+                                   + rhs[index2 + MN - M])
+                            + 0.25 * (rhs[index2 + 1]
+                                      + rhs[index2 - 1]
+                                      + rhs[index2 - M + 1]
+                                      + rhs[index2 - M - 1]
+                                      + rhs[index2 + MN + 1]
+                                      + rhs[index2 + MN - 1]
+                                      + rhs[index2 + MN - M + 1]
+                                      + rhs[index2 + MN - M - 1]));
+    }
+    
+    index1 = (0 * Nhalf + (Nhalf - 1)) * Mhalf + (Mhalf - 1);
+    index2 = (2 * 0 * N + 2 * (Nhalf - 1)) * M + 2 * (Mhalf - 1);
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 - 1]
+                                 + rhs[index2 - M]
+                                 + rhs[index2 - M - 1]
+                                 + rhs[index2 + MN]
+                                 + rhs[index2 + MN - 1]
+                                 + rhs[index2 + MN - M]
+                                 + rhs[index2 + MN - M - 1]));
+    
+    for (p = 1; p < Phalf - 1; p++)
+    {
+      index1 = (p * Nhalf + 0) * Mhalf + 0;
+      index2 = (2 * p * N + 2 * 0) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M + 1])
+                            + 0.25 * (rhs[index2 + MN]
+                                      + rhs[index2 + MN + 1]
+                                      + rhs[index2 + MN + M]
+                                      + rhs[index2 + MN + M + 1]
+                                      + rhs[index2 - MN]
+                                      + rhs[index2 - MN + 1]
+                                      + rhs[index2 - MN + M]
+                                      + rhs[index2 - MN + M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = (p * Nhalf + 0) * Mhalf + i;
+        index2 = (2 * p * N + 2 * 0) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + M])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 + M - 1]
+                                        + rhs[index2 + MN]
+                                        + rhs[index2 + MN + M]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN + M])
+                              + 0.125 * (rhs[index2 + MN + 1]
+                                         + rhs[index2 + MN - 1]
+                                         + rhs[index2 + MN + M + 1]
+                                         + rhs[index2 + MN + M - 1]
+                                         + rhs[index2 - MN + 1]
+                                         + rhs[index2 - MN - 1]
+                                         + rhs[index2 - MN + M + 1]
+                                         + rhs[index2 - MN + M - 1]));
+      }
+      
+      index1 = (p * Nhalf + 0) * Mhalf + (Mhalf - 1);
+      index2 = (2 * p * N + 2 * 0) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 + M - 1])
+                            + 0.25 * (rhs[index2 + MN]
+                                      + rhs[index2 + MN - 1]
+                                      + rhs[index2 + MN + M]
+                                      + rhs[index2 + MN + M - 1]
+                                      + rhs[index2 - MN]
+                                      + rhs[index2 - MN - 1]
+                                      + rhs[index2 - MN + M]
+                                      + rhs[index2 - MN + M - 1]));
+      
+      for (j = 1; j < Nhalf - 1; j++)
+      {
+        index1 = (p * Nhalf + j) * Mhalf + 0;
+        index2 = (2 * p * N + 2 * j) * M + 2 * 0;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 + 1])
+                              + 0.25 * (rhs[index2 + M]
+                                        + rhs[index2 + M + 1]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - M + 1]
+                                        + rhs[index2 + MN]
+                                        + rhs[index2 + MN + 1]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN + 1])
+                              + 0.125 * (rhs[index2 + MN + M]
+                                         + rhs[index2 + MN + M + 1]
+                                         + rhs[index2 + MN - M]
+                                         + rhs[index2 + MN - M + 1]
+                                         + rhs[index2 - MN + M]
+                                         + rhs[index2 - MN + M + 1]
+                                         + rhs[index2 - MN - M]
+                                         + rhs[index2 - MN - M + 1]));
+        
+        for (i = 1; i < Mhalf - 1; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          rhs_coarse[index1] = (0.5 * (rhs[index2])
+                                + 0.25 * (rhs[index2 + 1]
+                                          + rhs[index2 - 1]
+                                          + rhs[index2 + M]
+                                          + rhs[index2 - M]
+                                          + rhs[index2 + MN]
+                                          + rhs[index2 - MN])
+                                + 0.125 * (rhs[index2 + M + 1]
+                                           + rhs[index2 + M - 1]
+                                           + rhs[index2 - M + 1]
+                                           + rhs[index2 - M - 1]
+                                           + rhs[index2 + MN + 1]
+                                           + rhs[index2 + MN - 1]
+                                           + rhs[index2 + MN + M]
+                                           + rhs[index2 + MN - M]
+                                           + rhs[index2 - MN + 1]
+                                           + rhs[index2 - MN - 1]
+                                           + rhs[index2 - MN + M]
+                                           + rhs[index2 - MN - M])
+                                + 0.0625 * (rhs[index2 + MN + M + 1]
+                                            + rhs[index2 + MN + M - 1]
+                                            + rhs[index2 + MN - M + 1]
+                                            + rhs[index2 + MN - M - 1]
+                                            + rhs[index2 - MN + M + 1]
+                                            + rhs[index2 - MN + M - 1]
+                                            + rhs[index2 - MN - M + 1]
+                                            + rhs[index2 - MN - M - 1]));
+        }
+        
+        index1 = (p * Nhalf + j) * Mhalf + (Mhalf - 1);
+        index2 = (2 * p * N + 2 * j) * M + 2 * (Mhalf - 1);
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - 1])
+                              + 0.25 * (rhs[index2 + M]
+                                        + rhs[index2 + M - 1]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - M - 1]
+                                        + rhs[index2 + MN]
+                                        + rhs[index2 + MN - 1]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN - 1])
+                              + 0.125 * (rhs[index2 + MN + M]
+                                         + rhs[index2 + MN + M - 1]
+                                         + rhs[index2 + MN - M]
+                                         + rhs[index2 + MN - M - 1]
+                                         + rhs[index2 - MN + M]
+                                         + rhs[index2 - MN + M - 1]
+                                         + rhs[index2 - MN - M]
+                                         + rhs[index2 - MN - M - 1]));
+      }
+      
+      index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + 0;
+      index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - M + 1])
+                            + 0.25 * (rhs[index2 + MN]
+                                      + rhs[index2 + MN + 1]
+                                      + rhs[index2 + MN - M]
+                                      + rhs[index2 + MN - M + 1]
+                                      + rhs[index2 - MN]
+                                      + rhs[index2 - MN + 1]
+                                      + rhs[index2 - MN - M]
+                                      + rhs[index2 - MN - M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + i;
+        index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - M])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 - M + 1]
+                                        + rhs[index2 - M - 1]
+                                        + rhs[index2 + MN]
+                                        + rhs[index2 + MN - M]
+                                        + rhs[index2 - MN]
+                                        + rhs[index2 - MN - M])
+                              + 0.125 * (rhs[index2 + MN + 1]
+                                         + rhs[index2 + MN - 1]
+                                         + rhs[index2 + MN - M + 1]
+                                         + rhs[index2 + MN - M - 1]
+                                         + rhs[index2 - MN + 1]
+                                         + rhs[index2 - MN - 1]
+                                         + rhs[index2 - MN - M + 1]
+                                         + rhs[index2 - MN - M - 1]));
+      }
+      
+      index1 = (p * Nhalf + (Nhalf - 1)) * Mhalf + (Mhalf - 1);
+      index2 = (2 * p * N + 2 * (Nhalf - 1)) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - M - 1])
+                            + 0.25 * (rhs[index2 + MN]
+                                      + rhs[index2 + MN - 1]
+                                      + rhs[index2 + MN - M]
+                                      + rhs[index2 + MN - M - 1]
+                                      + rhs[index2 - MN]
+                                      + rhs[index2 - MN - 1]
+                                      + rhs[index2 - MN - M]
+                                      + rhs[index2 - MN - M - 1]));
+    }
+    
+    index1 = ((Phalf - 1) * Nhalf + 0) * Mhalf + 0;
+    index2 = (2 * (Phalf - 1) * N + 2 * 0) * M + 2 * 0;
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 + 1]
+                                 + rhs[index2 + M]
+                                 + rhs[index2 + M + 1]
+                                 + rhs[index2 - MN]
+                                 + rhs[index2 - MN + 1]
+                                 + rhs[index2 - MN + M]
+                                 + rhs[index2 - MN + M + 1]));
+    
+    for (i = 1; i < Mhalf - 1; i++)
+    {
+      index1 = ((Phalf - 1) * Nhalf + 0) * Mhalf + i;
+      index2 = (2 * (Phalf - 1) * N + 2 * 0) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + M]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN + M])
+                            + 0.25 * (rhs[index2 + 1]
+                                      + rhs[index2 - 1]
+                                      + rhs[index2 + M + 1]
+                                      + rhs[index2 + M - 1]
+                                      + rhs[index2 - MN + 1]
+                                      + rhs[index2 - MN - 1]
+                                      + rhs[index2 - MN + M + 1]
+                                      + rhs[index2 - MN + M - 1]));
+    }
+    
+    index1 = ((Phalf - 1) * Nhalf + 0) * Mhalf + (Mhalf - 1);
+    index2 = (2 * (Phalf - 1) * N + 2 * 0) * M + 2 * (Mhalf - 1);
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 - 1]
+                                 + rhs[index2 + M]
+                                 + rhs[index2 + M - 1]
+                                 + rhs[index2 - MN]
+                                 + rhs[index2 - MN - 1]
+                                 + rhs[index2 - MN + M]
+                                 + rhs[index2 - MN + M - 1]));
+    
+    for (j = 1; j < Nhalf - 1; j++)
+    {
+      index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + 0;
+      index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * 0;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 + 1]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN + 1])
+                            + 0.25 * (rhs[index2 + M]
+                                      + rhs[index2 + M + 1]
+                                      + rhs[index2 - M]
+                                      + rhs[index2 - M + 1]
+                                      + rhs[index2 - MN + M]
+                                      + rhs[index2 - MN + M + 1]
+                                      + rhs[index2 - MN - M]
+                                      + rhs[index2 - MN - M + 1]));
+      
+      for (i = 1; i < Mhalf - 1; i++)
+      {
+        index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + i;
+        index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * i;
+        rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                     + rhs[index2 - MN])
+                              + 0.25 * (rhs[index2 + 1]
+                                        + rhs[index2 - 1]
+                                        + rhs[index2 + M]
+                                        + rhs[index2 - M]
+                                        + rhs[index2 - MN + 1]
+                                        + rhs[index2 - MN - 1]
+                                        + rhs[index2 - MN + M]
+                                        + rhs[index2 - MN - M])
+                              + 0.125 * (rhs[index2 + M + 1]
+                                         + rhs[index2 + M - 1]
+                                         + rhs[index2 - M + 1]
+                                         + rhs[index2 - M - 1]
+                                         + rhs[index2 - MN + M + 1]
+                                         + rhs[index2 - MN + M - 1]
+                                         + rhs[index2 - MN - M + 1]
+                                         + rhs[index2 - MN - M - 1]));
+      }
+      
+      index1 = ((Phalf - 1) * Nhalf + j) * Mhalf + (Mhalf - 1);
+      index2 = (2 * (Phalf - 1) * N + 2 * j) * M + 2 * (Mhalf - 1);
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - 1]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN - 1])
+                            + 0.25 * (rhs[index2 + M]
+                                      + rhs[index2 + M - 1]
+                                      + rhs[index2 - M]
+                                      + rhs[index2 - M - 1]
+                                      + rhs[index2 - MN + M]
+                                      + rhs[index2 - MN + M - 1]
+                                      + rhs[index2 - MN - M]
+                                      + rhs[index2 - MN - M - 1]));
+    }
+    
+    index1 = ((Phalf - 1) * Nhalf + (Nhalf - 1)) * Mhalf + 0;
+    index2 = (2 * (Phalf - 1) * N + 2 * (Nhalf - 1)) * M + 2 * 0;
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 + 1]
+                                 + rhs[index2 - M]
+                                 + rhs[index2 - M + 1]
+                                 + rhs[index2 - MN]
+                                 + rhs[index2 - MN + 1]
+                                 + rhs[index2 - MN - M]
+                                 + rhs[index2 - MN - M + 1]));
+    
+    for (i = 1; i < Mhalf - 1; i++)
+    {
+      index1 = ((Phalf - 1) * Nhalf + (Nhalf - 1)) * Mhalf + i;
+      index2 = (2 * (Phalf - 1) * N + 2 * (Nhalf - 1)) * M + 2 * i;
+      rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                   + rhs[index2 - M]
+                                   + rhs[index2 - MN]
+                                   + rhs[index2 - MN - M])
+                            + 0.25 * (rhs[index2 + 1]
+                                      + rhs[index2 - 1]
+                                      + rhs[index2 - M + 1]
+                                      + rhs[index2 - M - 1]
+                                      + rhs[index2 - MN + 1]
+                                      + rhs[index2 - MN - 1]
+                                      + rhs[index2 - MN - M + 1]
+                                      + rhs[index2 - MN - M - 1]));
+    }
+    
+    index1 = ((Phalf - 1) * Nhalf + (Nhalf - 1)) * Mhalf + (Mhalf - 1);
+    index2 = (2 * (Phalf - 1) * N + 2 * (Nhalf - 1)) * M + 2 * (Mhalf - 1);
+    rhs_coarse[index1] = (0.5 * (rhs[index2]
+                                 + rhs[index2 - 1]
+                                 + rhs[index2 - M]
+                                 + rhs[index2 - M - 1]
+                                 + rhs[index2 - MN]
+                                 + rhs[index2 - MN - 1]
+                                 + rhs[index2 - MN - M]
+                                 + rhs[index2 - MN - M - 1]));
   }
 }
 
 
 void
-downsample3D(double *rhs, int M, int N, int P,
-	     double *rhs_coarse, int Mhalf, int Nhalf, int Phalf)
-{
-  int i, j, p;
-  int MN = M * N;
-  
-  for (p = 0; p < Phalf; p++)
-    for (j = 0; j < Nhalf; j++)
-      for (i = 0; i < Mhalf; i++)
-      {
-	int index1 = ((p * Nhalf + j) * Mhalf + i);
-	int index2 = ((2 * p * N + 2 * j) * M + 2 * i);
-	
-	if (2 * i == M - 1)
-	{
-	  if (2 * j == N - 1)
-	  {
-	    if (2 * p == P - 1)
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 - M]
-				    + rhs[index2 - 1]
-				    + rhs[index2 - M - 1]
-				    + rhs[index2 - MN]
-				    + rhs[index2 - M - MN]
-				    + rhs[index2 - 1 - MN]
-				    + rhs[index2 - M - 1 - MN]);
-	    else
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 - M]
-				    + rhs[index2 - 1]
-				    + rhs[index2 - M - 1]
-				    + rhs[index2 + MN]
-				    + rhs[index2 - M + MN]
-				    + rhs[index2 - 1 + MN]
-				    + rhs[index2 - M - 1 + MN]);
-	  }
-	  else
-	  {
-	    if (2 * p == P - 1)
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 + M]
-				    + rhs[index2 - 1]
-				    + rhs[index2 + M - 1]
-				    + rhs[index2 - MN]
-				    + rhs[index2 + M - MN]
-				    + rhs[index2 - 1 - MN]
-				    + rhs[index2 + M - 1 + MN]);
-	    else
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 + M]
-				    + rhs[index2 - 1]
-				    + rhs[index2 + M - 1]
-				    + rhs[index2 + MN]
-				    + rhs[index2 + M + MN]
-				    + rhs[index2 - 1 + MN]
-				    + rhs[index2 + M - 1 + MN]);
-	  }
-	}
-	else
-	{
-	  if (2 * j == N - 1)
-	  {
-	    if (2 * p == P - 1)
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 - M]
-				    + rhs[index2 + 1]
-				    + rhs[index2 - M + 1]
-				    + rhs[index2 - MN]
-				    + rhs[index2 - M - MN]
-				    + rhs[index2 + 1 - MN]
-				    + rhs[index2 - M + 1 - MN]);
-	    else
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 - M]
-				    + rhs[index2 + 1]
-				    + rhs[index2 - M + 1]
-				    + rhs[index2 + MN]
-				    + rhs[index2 - M + MN]
-				    + rhs[index2 + 1 + MN]
-				    + rhs[index2 - M + 1 + MN]);
-	  }
-	  else
-	  {
-	    if (2 * p == P - 1)
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 + M]
-				    + rhs[index2 + 1]
-				    + rhs[index2 + M + 1]
-				    + rhs[index2 - MN]
-				    + rhs[index2 + M - MN]
-				    + rhs[index2 + 1 - MN]
-				    + rhs[index2 + M + 1 - MN]);
-	    else
-	      rhs_coarse[index1] = (rhs[index2]
-				    + rhs[index2 + M]
-				    + rhs[index2 + 1]
-				    + rhs[index2 + M + 1]
-				    + rhs[index2 + MN]
-				    + rhs[index2 + M + MN]
-				    + rhs[index2 + 1 + MN]
-				    + rhs[index2 + M + 1 + MN]);
-	  }
-	}
-	rhs_coarse[index1] *= 0.5;
-      } 
-}
-
-
-void
 upsample3D(double *rhs, int M, int N, int P,
-	   double *v, int Mhalf, int Nhalf, int Phalf,
-	   double *f_out)
+           double *v, int Mhalf, int Nhalf, int Phalf,
+           double *f_out)
 {
   int i, j, p;
+  int index1;
+  int index2;
   int MN = M * N;
   int MNhalf = Mhalf * Nhalf;
   
-  /* Upsample and apply correction. Bilinear interpolation. */
-  for (p = 0; p < Phalf; p++)
-    for (j = 0; j < Nhalf; j++)
-      for (i = 0; i < Mhalf; i++)
+  if (M % 2 == 0 && N % 2 == 0 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
       {
-	int index1 = ((p * Nhalf + j) * Mhalf + i);
-	int index2 = ((2 * p * N + 2 * j) * M + 2 * i);
-	
-	/* Fine pixels down-northwest of coarse pixel center. */
-	if (i == 0)
-	{
-	  if (j == 0)
-	  {
-	    if (p == 0) /* DNW corner */
-	      f_out[index2] += v[index1] - 0.25 * rhs[index2];
-	    else /* NW edge */
-	      f_out[index2] += (0.75 * v[index1]
-				+ 0.25 * v[index1 - MNhalf]
-				- 0.25 * rhs[index2]);
-	  }
-	  else
-	  {
-	    if (p == 0) /* DN edge */
-	      f_out[index2] += (0.75 * v[index1]
-				+ 0.25 * v[index1 - Mhalf]
-				- 0.25 * rhs[index2]);
-	    else /* North surface */
-	      f_out[index2] += (0.5625 * v[index1]
-				+ 0.1875 * v[index1 - Mhalf]
-				+ 0.1875 * v[index1 - MNhalf]
-				+ 0.0625 * v[index1 - Mhalf - MNhalf]
-				- 0.25 * rhs[index2]);
-	  }
-	}
-	else
-	{
-	  if (j == 0)
-	  {
-	    if (p == 0) /* DW edge */
-	      f_out[index2] += (0.75 * v[index1]
-				+ 0.25 * v[index1 - 1]
-				- 0.25 * rhs[index2]);
-	    else /* West surface */
-	      f_out[index2] += (0.5625 * v[index1]
-				+ 0.1875 * v[index1 - 1]
-				+ 0.1875 * v[index1 - MNhalf]
-				+ 0.0625 * v[index1 - 1 - MNhalf]
-				- 0.25 * rhs[index2]);
-	  }
-	  else
-	  {
-	    if (p == 0) /* Down surface */
-	      f_out[index2] += (0.5625 * v[index1]
-				+ 0.1875 * v[index1 - 1]
-				+ 0.1875 * v[index1 - Mhalf]
-				+ 0.0625 * v[index1 - 1 - Mhalf]
-				- 0.25 * rhs[index2]);
-	    else /* inner point */
-	      f_out[index2] += (0.421875 * v[index1]
-				+ 0.140625 * v[index1 - 1]
-				+ 0.140625 * v[index1 - Mhalf]
-				+ 0.046875 * v[index1 - 1 - Mhalf]
-				+ 0.140625 * v[index1 - MNhalf]
-				+ 0.046875 * v[index1 - 1 - MNhalf]
-				+ 0.046875 * v[index1 - Mhalf - MNhalf]
-				+ 0.015625 * v[index1 - 1 - Mhalf - MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels down-southwest of coarse pixel center.
-	 * These will only appear on the south surface if the fine
-	 * height is even.
-	 */
-	if (2*i+1 == M-1)
-	{
-	  if (j == 0)
-	  {
-	    if (p == 0) /* DNW corner */
-	      f_out[index2 + 1] += v[index1] - 0.25 * rhs[index2 + 1];
-	    else /* NW edge */
-	      f_out[index2 + 1] += (0.75 * v[index1]
-				    + 0.25 * v[index1 - MNhalf]
-				    - 0.25 * rhs[index2 + 1]);
-	  }
-	  else
-	  {
-	    if (p == 0) /* DN edge */
-	      f_out[index2 + 1] += (0.75 * v[index1]
-				    + 0.25 * v[index1 - Mhalf]
-				    - 0.25 * rhs[index2 + 1]);
-	    else /* North surface */
-	      f_out[index2 + 1] += (0.5625 * v[index1]
-				    + 0.1875 * v[index1 - Mhalf]
-				    + 0.1875 * v[index1 - MNhalf]
-				    + 0.0625 * v[index1 - Mhalf - MNhalf]
-				    - 0.25 * rhs[index2 + 1]);
-	  }
-	}
-	else if (2*i+1 < M-1)
-	{
-	  if (j == 0)
-	  {
-	    if (p == 0) /* DW edge */
-	      f_out[index2 + 1] += (0.75 * v[index1]
-				    + 0.25 * v[index1 + 1]
-				    - 0.25 * rhs[index2 + 1]);
-	    else /* West surface */
-	      f_out[index2 + 1] += (0.5625 * v[index1]
-				    + 0.1875 * v[index1 + 1]
-				    + 0.1875 * v[index1 - MNhalf]
-				    + 0.0625 * v[index1 + 1 - MNhalf]
-				    - 0.25 * rhs[index2 + 1]);
-	  }
-	  else
-	  {
-	    if (p == 0) /* Down surface */
-	      f_out[index2 + 1] += (0.5625 * v[index1]
-				    + 0.1875 * v[index1 + 1]
-				    + 0.1875 * v[index1 - Mhalf]
-				    + 0.0625 * v[index1 + 1 - Mhalf]
-				    - 0.25 * rhs[index2 + 1]);
-	    else /* inner point */
-	      f_out[index2 + 1] += (0.421875 * v[index1]
-				    + 0.140625 * v[index1 + 1]
-				    + 0.140625 * v[index1 - Mhalf]
-				    + 0.046875 * v[index1 + 1 - Mhalf]
-				    + 0.140625 * v[index1 - MNhalf]
-				    + 0.046875 * v[index1 + 1 - MNhalf]
-				    + 0.046875 * v[index1 - Mhalf - MNhalf]
-				    + 0.015625 * v[index1 + 1 - Mhalf - MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels down-northeast of coarse pixel center.
-	 * These will only appear on the east surface if the fine
-	 * width is even.
-	 */
-	if (i == 0)
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (p == 0) /* DNE corner */
-	      f_out[index2 + M] += (v[index1]
-				    - 0.25 * rhs[index2 + M]);
-	    else /* NE edge */
-	      f_out[index2 + M] += (0.75 * v[index1]
-				    + 0.25 * v[index1 - MNhalf]
-				    - 0.25 * rhs[index2 + M]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (p == 0) /* DN edge */
-	      f_out[index2 + M] += (0.75 * v[index1]
-				    + 0.25 * v[index1 + Mhalf]
-				    - 0.25 * rhs[index2 + M]);
-	    else /* North surface */
-	      f_out[index2 + M] += (0.5625 * v[index1]
-				    + 0.1875 * v[index1 + Mhalf]
-				    + 0.1875 * v[index1 - MNhalf]
-				    + 0.0625 * v[index1 + Mhalf - MNhalf]
-				    - 0.25 * rhs[index2 + M]);
-	  }
-	}
-	else
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (p == 0) /* DE edge */
-	      f_out[index2 + M] += (0.75 * v[index1]
-				    + 0.25 * v[index1 - 1]
-				    - 0.25 * rhs[index2 + M]);
-	    else /* East surface */
-	      f_out[index2 + M] += (0.5625 * v[index1]
-				    + 0.1875 * v[index1 - 1]
-				    + 0.1875 * v[index1 - MNhalf]
-				    + 0.0625 * v[index1 - 1 - MNhalf]
-				    - 0.25 * rhs[index2 + M]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (p == 0) /* Down surface */
-	      f_out[index2 + M] += (0.5625 * v[index1]
-				    + 0.1875 * v[index1 - 1]
-				    + 0.1875 * v[index1 + Mhalf]
-				    + 0.0625 * v[index1 - 1 + Mhalf]
-				    - 0.25 * rhs[index2 + M]);
-	    else /* inner point */
-	      f_out[index2 + M] += (0.421875 * v[index1]
-				    + 0.140625 * v[index1 - 1]
-				    + 0.140625 * v[index1 + Mhalf]
-				    + 0.046875 * v[index1 - 1 + Mhalf]
-				    + 0.140625 * v[index1 - MNhalf]
-				    + 0.046875 * v[index1 - 1 - MNhalf]
-				    + 0.046875 * v[index1 + Mhalf - MNhalf]
-				    + 0.015625 * v[index1 - 1 + Mhalf - MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels down-southeast of coarse pixel center.
-	 * These will only appear on the south surface if the fine
-	 * height is even and on the east surface if the fine width
-	 * is even.
-	 */
-	if (2*i+1 == M-1)
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (p == 0) /* DNE corner */
-	      f_out[index2 + 1 + M] += v[index1] - 0.25 * rhs[index2 + 1 + M];
-	    else /* NE edge */
-	      f_out[index2 + 1 + M] += (0.75 * v[index1]
-					+ 0.25 * v[index1 - MNhalf]
-					- 0.25 * rhs[index2 + 1 + M]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (p == 0) /* DN edge */
-	      f_out[index2 + 1 + M] += (0.75 * v[index1]
-					+ 0.25 * v[index1 + Mhalf]
-					- 0.25 * rhs[index2 + 1 + M]);
-	    else /* North surface */
-	      f_out[index2 + 1 + M] += (0.5625 * v[index1]
-					+ 0.1875 * v[index1 + Mhalf]
-					+ 0.1875 * v[index1 - MNhalf]
-					+ 0.0625 * v[index1 + Mhalf - MNhalf]
-					- 0.25 * rhs[index2 + 1 + M]);
-	  }
-	}
-	else if (2*i+1 < M-1)
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (p == 0) /* DE edge */
-	      f_out[index2 + 1 + M] += (0.75 * v[index1]
-					+ 0.25 * v[index1 + 1]
-					- 0.25 * rhs[index2 + 1 + M]);
-	    else /* East surface */
-	      f_out[index2 + 1 + M] += (0.5625 * v[index1]
-					+ 0.1875 * v[index1 + 1]
-					+ 0.1875 * v[index1 - MNhalf]
-					+ 0.0625 * v[index1 + 1 - MNhalf]
-					- 0.25 * rhs[index2 + 1 + M]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (p == 0) /* Down surface */
-	      f_out[index2 + 1 + M] += (0.5625 * v[index1]
-					+ 0.1875 * v[index1 + 1]
-					+ 0.1875 * v[index1 + Mhalf]
-					+ 0.0625 * v[index1 + 1 + Mhalf]
-					- 0.25 * rhs[index2 + 1 + M]);
-	    else /* inner point */
-	      f_out[index2 + 1 + M] += (0.421875 * v[index1]
-					+ 0.140625 * v[index1 + 1]
-					+ 0.140625 * v[index1 + Mhalf]
-					+ 0.046875 * v[index1 + 1 + Mhalf]
-					+ 0.140625 * v[index1 - MNhalf]
-					+ 0.046875 * v[index1 + 1 - MNhalf]
-					+ 0.046875 * v[index1 + Mhalf - MNhalf]
-					+ 0.015625 * v[index1 + 1 + Mhalf - MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels up-northwest of coarse pixel center.
-	 * These will only appear on the up surface if the fine
-	 * tallness is even.
-	 */
-	if (i == 0)
-	{
-	  if (j == 0)
-	  {
-	    if (2*p+1 == P-1) /* UNW corner */
-	      f_out[index2 + MN] += v[index1] - 0.25 * rhs[index2 + MN];
-	    else if (2*p+1 < P-1) /* NW edge */
-	      f_out[index2 + MN] += (0.75 * v[index1]
-				     + 0.25 * v[index1 + MNhalf]
-				     - 0.25 * rhs[index2 + MN]);
-	  }
-	  else
-	  {
-	    if (2*p+1 == P-1) /* UN edge */
-	      f_out[index2 + MN] += (0.75 * v[index1]
-				     + 0.25 * v[index1 - Mhalf]
-				     - 0.25 * rhs[index2 + MN]);
-	    else if (2*p+1 < P-1) /* North surface */
-	      f_out[index2 + MN] += (0.5625 * v[index1]
-				     + 0.1875 * v[index1 - Mhalf]
-				     + 0.1875 * v[index1 + MNhalf]
-				     + 0.0625 * v[index1 - Mhalf + MNhalf]
-				     - 0.25 * rhs[index2 + MN]);
-	  }
-	}
-	else
-	{
-	  if (j == 0)
-	  {
-	    if (2*p+1 == P-1) /* UW edge */
-	      f_out[index2 + MN] += (0.75 * v[index1]
-				     + 0.25 * v[index1 - 1]
-				     - 0.25 * rhs[index2 + MN]);
-	    else if (2*p+1 < P-1) /* West surface */
-	      f_out[index2 + MN] += (0.5625 * v[index1]
-				     + 0.1875 * v[index1 - 1]
-				     + 0.1875 * v[index1 + MNhalf]
-				     + 0.0625 * v[index1 - 1 + MNhalf]
-				     - 0.25 * rhs[index2 + MN]);
-	  }
-	  else
-	  {
-	    if (2*p+1 == P-1) /* Up surface */
-	      f_out[index2 + MN] += (0.5625 * v[index1]
-				     + 0.1875 * v[index1 - 1]
-				     + 0.1875 * v[index1 - Mhalf]
-				     + 0.0625 * v[index1 - 1 - Mhalf]
-				     - 0.25 * rhs[index2 + MN]);
-	    else if (2*p+1 < P-1) /* inner point */
-	      f_out[index2 + MN] += (0.421875 * v[index1]
-				     + 0.140625 * v[index1 - 1]
-				     + 0.140625 * v[index1 - Mhalf]
-				     + 0.046875 * v[index1 - 1 - Mhalf]
-				     + 0.140625 * v[index1 + MNhalf]
-				     + 0.046875 * v[index1 - 1 + MNhalf]
-				     + 0.046875 * v[index1 - Mhalf + MNhalf]
-				     + 0.015625 * v[index1 - 1 - Mhalf + MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels up-southwest of coarse pixel center.
-	 * These will only appear on the south surface if the
-	 * fine height is even and on the up surface if the
-	 * fine tallness is even.
-	 */
-	if (2*i+1 == M-1)
-	{
-	  if (j == 0)
-	  {
-	    if (2*p+1 == P-1) /* UNW corner */
-	      f_out[index2 + 1 + MN] += v[index1] - 0.25 * rhs[index2 + 1 + MN];
-	    else if (2*p+1 < P-1) /* NW edge */
-	      f_out[index2 + 1 + MN] += (0.75 * v[index1]
-					 + 0.25 * v[index1 + MNhalf]
-					 - 0.25 * rhs[index2 + 1 + MN]);
-	  }
-	  else
-	  {
-	    if (2*p+1 == P-1) /* UN edge */
-	      f_out[index2 + 1 + MN] += (0.75 * v[index1]
-					 + 0.25 * v[index1 - Mhalf]
-					 - 0.25 * rhs[index2 + 1 + MN]);
-	    else if (2*p+1 < P-1) /* North surface */
-	      f_out[index2 + 1 + MN] += (0.5625 * v[index1]
-					 + 0.1875 * v[index1 - Mhalf]
-					 + 0.1875 * v[index1 + MNhalf]
-					 + 0.0625 * v[index1 - Mhalf + MNhalf]
-					 - 0.25 * rhs[index2 + 1 + MN]);
-	  }
-	}
-	else if (2*i+1 < M-1)
-	{
-	  if (j == 0)
-	  {
-	    if (2*p+1 == P-1) /* UW edge */
-	      f_out[index2 + 1 + MN] += (0.75 * v[index1]
-					 + 0.25 * v[index1 + 1]
-					 - 0.25 * rhs[index2 + 1 + MN]);
-	    else if (2*p+1 < P-1) /* West surface */
-	      f_out[index2 + 1 + MN] += (0.5625 * v[index1]
-					 + 0.1875 * v[index1 + 1]
-					 + 0.1875 * v[index1 + MNhalf]
-					 + 0.0625 * v[index1 + 1 + MNhalf]
-					 - 0.25 * rhs[index2 + 1 + MN]);
-	  }
-	  else
-	  {
-	    if (2*p+1 == P-1) /* Up surface */
-	      f_out[index2 + 1 + MN] += (0.5625 * v[index1]
-					 + 0.1875 * v[index1 + 1]
-					 + 0.1875 * v[index1 - Mhalf]
-					 + 0.0625 * v[index1 + 1 - Mhalf]
-					 - 0.25 * rhs[index2 + 1 + MN]);
-	    else if (2*p+1 < P-1) /* inner point */
-	      f_out[index2 + 1 + MN] += (0.421875 * v[index1]
-					 + 0.140625 * v[index1 + 1]
-					 + 0.140625 * v[index1 - Mhalf]
-					 + 0.046875 * v[index1 + 1 - Mhalf]
-					 + 0.140625 * v[index1 + MNhalf]
-					 + 0.046875 * v[index1 + 1 + MNhalf]
-					 + 0.046875 * v[index1 - Mhalf + MNhalf]
-					 + 0.015625 * v[index1 + 1 - Mhalf + MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels up-northeast of coarse pixel center.
-	 * These will only appear on the east surface if the
-	 * fine width is even and on the up surface if the
-	 * fine tallness is even.
-	 */
-	if (i == 0)
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (2*p+1 == P-1) /* UNE corner */
-	      f_out[index2 + M + MN] += (v[index1]
-					 - 0.25 * rhs[index2 + M + MN]);
-	    else if (2*p+1 < P-1) /* NE edge */
-	      f_out[index2 + M + MN] += (0.75 * v[index1]
-					 + 0.25 * v[index1 + MNhalf]
-					 - 0.25 * rhs[index2 + M + MN]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (2*p+1 == P-1) /* UN edge */
-	      f_out[index2 + M + MN] += (0.75 * v[index1]
-					 + 0.25 * v[index1 + Mhalf]
-					 - 0.25 * rhs[index2 + M + MN]);
-	    else if (2*p+1 < P-1) /* North surface */
-	      f_out[index2 + M + MN] += (0.5625 * v[index1]
-					 + 0.1875 * v[index1 + Mhalf]
-					 + 0.1875 * v[index1 + MNhalf]
-					 + 0.0625 * v[index1 + Mhalf + MNhalf]
-					 - 0.25 * rhs[index2 + M + MN]);
-	  }
-	}
-	else
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (2*p+1 == P-1) /* UE edge */
-	      f_out[index2 + M + MN] += (0.75 * v[index1]
-					 + 0.25 * v[index1 - 1]
-					 - 0.25 * rhs[index2 + M + MN]);
-	    else if (2*p+1 < P-1) /* East surface */
-	      f_out[index2 + M + MN] += (0.5625 * v[index1]
-					 + 0.1875 * v[index1 - 1]
-					 + 0.1875 * v[index1 + MNhalf]
-					 + 0.0625 * v[index1 - 1 + MNhalf]
-					 - 0.25 * rhs[index2 + M + MN]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (2*p+1 == P-1) /* Up surface */
-	      f_out[index2 + M + MN] += (0.5625 * v[index1]
-					 + 0.1875 * v[index1 - 1]
-					 + 0.1875 * v[index1 + Mhalf]
-					 + 0.0625 * v[index1 - 1 + Mhalf]
-					 - 0.25 * rhs[index2 + M + MN]);
-	    else if (2*p+1 < P-1) /* inner point */
-	      f_out[index2 + M + MN] += (0.421875 * v[index1]
-					 + 0.140625 * v[index1 - 1]
-					 + 0.140625 * v[index1 + Mhalf]
-					 + 0.046875 * v[index1 - 1 + Mhalf]
-					 + 0.140625 * v[index1 + MNhalf]
-					 + 0.046875 * v[index1 - 1 + MNhalf]
-					 + 0.046875 * v[index1 + Mhalf + MNhalf]
-					 + 0.015625 * v[index1 - 1 + Mhalf + MNhalf]);
-	  }
-	}
-	
-	/* Fine pixels up-southeast of coarse pixel center.
-	 * These will only appear on the south surface if the
-	 * fine height is even, on the east surface if the
-	 * fine width is even, and on the up surface if the
-	 * fine tallness is even.
-	 */
-	if (2*i+1 == M-1)
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (2*p+1 == P-1) /* UNE corner */
-	      f_out[index2 + 1 + M + MN] += v[index1] - 0.25 * rhs[index2 + 1 + M + MN];
-	    else if (2*p+1 < P-1) /* NE edge */
-	      f_out[index2 + 1 + M + MN] += (0.75 * v[index1]
-					     + 0.25 * v[index1 + MNhalf]
-					     - 0.25 * rhs[index2 + 1 + M + MN]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (2*p+1 == P-1) /* UN edge */
-	      f_out[index2 + 1 + M + MN] += (0.75 * v[index1]
-					     + 0.25 * v[index1 + Mhalf]
-					     - 0.25 * rhs[index2 + 1 + M + MN]);
-	    else if (2*p+1 < P-1) /* North surface */
-	      f_out[index2 + 1 + M + MN] += (0.5625 * v[index1]
-					     + 0.1875 * v[index1 + Mhalf]
-					     + 0.1875 * v[index1 + MNhalf]
-					     + 0.0625 * v[index1 + Mhalf + MNhalf]
-					     - 0.25 * rhs[index2 + 1 + M + MN]);
-	  }
-	}
-	else if (2*i+1 < M-1)
-	{
-	  if (2*j+1 == N-1)
-	  {
-	    if (2*p+1 == P-1) /* UE edge */
-	      f_out[index2 + 1 + M + MN] += (0.75 * v[index1]
-					     + 0.25 * v[index1 + 1]
-					     - 0.25 * rhs[index2 + 1 + M + MN]);
-	    else if (2*p+1 < P-1) /* East surface */
-	      f_out[index2 + 1 + M + MN] += (0.5625 * v[index1]
-					     + 0.1875 * v[index1 + 1]
-					     + 0.1875 * v[index1 + MNhalf]
-					     + 0.0625 * v[index1 + 1 + MNhalf]
-					     - 0.25 * rhs[index2 + 1 + M + MN]);
-	  }
-	  else if (2*j+1 < N-1)
-	  {
-	    if (2*p+1 == P-1) /* Up surface */
-	      f_out[index2 + 1 + M + MN] += (0.5625 * v[index1]
-					     + 0.1875 * v[index1 + 1]
-					     + 0.1875 * v[index1 + Mhalf]
-					     + 0.0625 * v[index1 + 1 + Mhalf]
-					     - 0.25 * rhs[index2 + 1 + M + MN]);
-	    else if (2*p+1 < P-1) /* inner point */
-	      f_out[index2 + 1 + M + MN] += (0.421875 * v[index1]
-					     + 0.140625 * v[index1 + 1]
-					     + 0.140625 * v[index1 + Mhalf]
-					     + 0.046875 * v[index1 + 1 + Mhalf]
-					     + 0.140625 * v[index1 + MNhalf]
-					     + 0.046875 * v[index1 + 1 + MNhalf]
-					     + 0.046875 * v[index1 + Mhalf + MNhalf]
-					     + 0.015625 * v[index1 + 1 + Mhalf + MNhalf]);
-	  }
-	}
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (p == 0)
+          {
+            if (j == 0)
+            {
+              if (i == 0)
+              {
+                f_out[index2] += (v[index1]);
+              }
+              else
+              {
+                f_out[index2] += (0.75 * v[index1]
+                                  + 0.25 * v[index1 - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2] += (0.75 * v[index1]
+                                  + 0.25 * v[index1 - Mhalf]);
+              }
+              else
+              {
+                f_out[index2] += (0.5625 * v[index1]
+                                  + 0.1875 * (v[index1 - 1]
+                                              + v[index1 - Mhalf])
+                                  + 0.0625 * v[index1 - Mhalf - 1]);
+              }
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              if (i == 0)
+              {
+                f_out[index2] += (0.75 * v[index1]
+                                  + 0.25 * v[index1 - MNhalf]);
+              }
+              else
+              {
+                f_out[index2] += (0.5625 * v[index1]
+                                  + 0.1875 * (v[index1 - 1]
+                                              + v[index1 - MNhalf])
+                                  + 0.0625 * v[index1 - MNhalf - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2] += (0.5625 * v[index1]
+                                  + 0.1875 * (v[index1 - Mhalf]
+                                              + v[index1 - MNhalf])
+                                  + 0.0625 * v[index1 - MNhalf - Mhalf]);
+              }
+              else
+              {
+                f_out[index2] += (0.421875 * v[index1]
+                                  + 0.140625 * (v[index1 - 1]
+                                                + v[index1 - Mhalf]
+                                                + v[index1 - MNhalf])
+                                  + 0.046875 * (v[index1 - Mhalf - 1]
+                                                + v[index1 - MNhalf - 1]
+                                                + v[index1 - MNhalf - Mhalf])
+                                  + 0.015625 * v[index1 - MNhalf - Mhalf - 1]);
+              }
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.75 * v[index1]
+                                      + 0.25 * v[index1 + 1]);
+              }
+              else
+              {
+                f_out[index2 + 1] += (v[index1]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.5625 * v[index1]
+                                      + 0.1875 * (v[index1 + 1]
+                                                  + v[index1 - Mhalf])
+                                      + 0.0625 * v[index1 - Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + 1] += (0.75 * v[index1]
+                                      + 0.25 * v[index1 - Mhalf]);
+              }
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.5625 * v[index1]
+                                      + 0.1875 * (v[index1 + 1]
+                                                  + v[index1 - MNhalf])
+                                      + 0.0625 * v[index1 - MNhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + 1] += (0.75 * v[index1]
+                                      + 0.25 * v[index1 - MNhalf]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.421875 * v[index1]
+                                      + 0.140625 * (v[index1 + 1]
+                                                    + v[index1 - Mhalf]
+                                                    + v[index1 - MNhalf])
+                                      + 0.046875 * (v[index1 - Mhalf + 1]
+                                                    + v[index1 - MNhalf + 1]
+                                                    + v[index1 - MNhalf - Mhalf])
+                                      + 0.015625 * v[index1 - MNhalf - Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + 1] += (0.5625 * v[index1]
+                                      + 0.1875 * (v[index1 - Mhalf]
+                                                  + v[index1 - MNhalf])
+                                      + 0.0625 * v[index1 - MNhalf - Mhalf]);
+              }
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + M] += (0.75 * v[index1]
+                                      + 0.25 * v[index1 + Mhalf]);
+              }
+              else
+              {
+                f_out[index2 + M] += (0.5625 * v[index1]
+                                      + 0.1875 * (v[index1 - 1]
+                                                  + v[index1 + Mhalf])
+                                      + 0.0625 * v[index1 + Mhalf - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + M] += (v[index1]);
+              }
+              else
+              {
+                f_out[index2 + M] += (0.75 * v[index1]
+                                      + 0.25 * v[index1 - 1]);
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + M] += (0.5625 * v[index1]
+                                      + 0.1875 * (v[index1 + Mhalf]
+                                                  + v[index1 - MNhalf])
+                                      + 0.0625 * v[index1 - MNhalf + Mhalf]);
+              }
+              else
+              {
+                f_out[index2 + M] += (0.421875 * v[index1]
+                                      + 0.140625 * (v[index1 - 1]
+                                                    + v[index1 + Mhalf]
+                                                    + v[index1 - MNhalf])
+                                      + 0.046875 * (v[index1 + Mhalf - 1]
+                                                    + v[index1 - MNhalf - 1]
+                                                    + v[index1 - MNhalf + Mhalf])
+                                      + 0.015625 * v[index1 - MNhalf + Mhalf - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + M] += (0.75 * v[index1]
+                                      + 0.25 * v[index1 - MNhalf]);
+              }
+              else
+              {
+                f_out[index2 + M] += (0.5625 * v[index1]
+                                      + 0.1875 * (v[index1 - 1]
+                                                  + v[index1 - MNhalf])
+                                      + 0.0625 * v[index1 - MNhalf - 1]);
+              }
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.5625 * v[index1]
+                                          + 0.1875 * (v[index1 + 1]
+                                                      + v[index1 + Mhalf])
+                                          + 0.0625 * v[index1 + Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + M + 1] += (0.75 * v[index1]
+                                          + 0.25 * v[index1 + Mhalf]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.75 * v[index1]
+                                          + 0.25 * v[index1 + 1]);
+              }
+              else
+              {
+                f_out[index2 + M + 1] += (v[index1]);
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.421875 * v[index1]
+                                          + 0.140625 * (v[index1 + 1]
+                                                        + v[index1 + Mhalf]
+                                                        + v[index1 - MNhalf])
+                                          + 0.046875 * (v[index1 + Mhalf + 1]
+                                                        + v[index1 - MNhalf + 1]
+                                                        + v[index1 - MNhalf + Mhalf])
+                                          + 0.015625 * v[index1 - MNhalf + Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + M + 1] += (0.5625 * v[index1]
+                                          + 0.1875 * (v[index1 + Mhalf]
+                                                      + v[index1 - MNhalf])
+                                          + 0.0625 * v[index1 - MNhalf + Mhalf]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.5625 * v[index1]
+                                          + 0.1875 * (v[index1 + 1]
+                                                      + v[index1 - MNhalf])
+                                          + 0.0625 * v[index1 - MNhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + M + 1] += (0.75 * v[index1]
+                                          + 0.25 * v[index1 - MNhalf]);
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN] += (0.75 * v[index1]
+                                       + 0.25 * v[index1 + MNhalf]);
+              }
+              else
+              {
+                f_out[index2 + MN] += (0.5625 * v[index1]
+                                       + 0.1875 * (v[index1 - 1]
+                                                   + v[index1 + MNhalf])
+                                       + 0.0625 * v[index1 + MNhalf - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN] += (0.5625 * v[index1]
+                                       + 0.1875 * (v[index1 - Mhalf]
+                                                   + v[index1 + MNhalf])
+                                       + 0.0625 * v[index1 + MNhalf - Mhalf]);
+              }
+              else
+              {
+                f_out[index2 + MN] += (0.421875 * v[index1]
+                                       + 0.140625 * (v[index1 - 1]
+                                                     + v[index1 - Mhalf]
+                                                     + v[index1 + MNhalf])
+                                       + 0.046875 * (v[index1 - Mhalf - 1]
+                                                     + v[index1 + MNhalf - 1]
+                                                     + v[index1 + MNhalf - Mhalf])
+                                       + 0.015625 * v[index1 + MNhalf - Mhalf - 1]);
+              }
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN] += (v[index1]);
+              }
+              else
+              {
+                f_out[index2 + MN] += (0.75 * v[index1]
+                                       + 0.25 * v[index1 - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN] += (0.75 * v[index1]
+                                       + 0.25 * v[index1 - Mhalf]);
+              }
+              else
+              {
+                f_out[index2 + MN] += (0.5625 * v[index1]
+                                       + 0.1875 * (v[index1 - 1]
+                                                   + v[index1 - Mhalf])
+                                       + 0.0625 * v[index1 - Mhalf - 1]);
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.5625 * v[index1]
+                                           + 0.1875 * (v[index1 + 1]
+                                                       + v[index1 + MNhalf])
+                                           + 0.0625 * v[index1 + MNhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + 1] += (0.75 * v[index1]
+                                           + 0.25 * v[index1 + MNhalf]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.421875 * v[index1]
+                                           + 0.140625 * (v[index1 + 1]
+                                                         + v[index1 - Mhalf]
+                                                         + v[index1 + MNhalf])
+                                           + 0.046875 * (v[index1 - Mhalf + 1]
+                                                         + v[index1 + MNhalf + 1]
+                                                         + v[index1 + MNhalf - Mhalf])
+                                           + 0.015625 * v[index1 + MNhalf - Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + 1] += (0.5625 * v[index1]
+                                           + 0.1875 * (v[index1 - Mhalf]
+                                                       + v[index1 + MNhalf])
+                                           + 0.0625 * v[index1 + MNhalf - Mhalf]);
+              }
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.75 * v[index1]
+                                           + 0.25 * v[index1 + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + 1] += (v[index1]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.5625 * v[index1]
+                                           + 0.1875 * (v[index1 + 1]
+                                                       + v[index1 - Mhalf])
+                                           + 0.0625 * v[index1 - Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + 1] += (0.75 * v[index1]
+                                           + 0.25 * v[index1 - Mhalf]);
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.5625 * v[index1]
+                                           + 0.1875 * (v[index1 + Mhalf]
+                                                       + v[index1 + MNhalf])
+                                           + 0.0625 * v[index1 + MNhalf + Mhalf]);
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.421875 * v[index1]
+                                           + 0.140625 * (v[index1 - 1]
+                                                         + v[index1 + Mhalf]
+                                                         + v[index1 + MNhalf])
+                                           + 0.046875 * (v[index1 + Mhalf - 1]
+                                                         + v[index1 + MNhalf - 1]
+                                                         + v[index1 + MNhalf + Mhalf])
+                                           + 0.015625 * v[index1 + MNhalf + Mhalf - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.75 * v[index1]
+                                           + 0.25 * v[index1 + MNhalf]);
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.5625 * v[index1]
+                                           + 0.1875 * (v[index1 - 1]
+                                                       + v[index1 + MNhalf])
+                                           + 0.0625 * v[index1 + MNhalf - 1]);
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.75 * v[index1]
+                                           + 0.25 * v[index1 + Mhalf]);
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.5625 * v[index1]
+                                           + 0.1875 * (v[index1 - 1]
+                                                       + v[index1 + Mhalf])
+                                           + 0.0625 * v[index1 + Mhalf - 1]);
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (v[index1]);
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.75 * v[index1]
+                                           + 0.25 * v[index1 - 1]);
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.421875 * v[index1]
+                                               + 0.140625 * (v[index1 + 1]
+                                                             + v[index1 + Mhalf]
+                                                             + v[index1 + MNhalf])
+                                               + 0.046875 * (v[index1 + Mhalf + 1]
+                                                             + v[index1 + MNhalf + 1]
+                                                             + v[index1 + MNhalf + Mhalf])
+                                               + 0.015625 * v[index1 + MNhalf + Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.5625 * v[index1]
+                                               + 0.1875 * (v[index1 + Mhalf]
+                                                           + v[index1 + MNhalf])
+                                               + 0.0625 * v[index1 + MNhalf + Mhalf]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.5625 * v[index1]
+                                               + 0.1875 * (v[index1 + 1]
+                                                           + v[index1 + MNhalf])
+                                               + 0.0625 * v[index1 + MNhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.75 * v[index1]
+                                               + 0.25 * v[index1 + MNhalf]);
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.5625 * v[index1]
+                                               + 0.1875 * (v[index1 + 1]
+                                                           + v[index1 + Mhalf])
+                                               + 0.0625 * v[index1 + Mhalf + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.75 * v[index1]
+                                               + 0.25 * v[index1 + Mhalf]);
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.75 * v[index1]
+                                               + 0.25 * v[index1 + 1]);
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (v[index1]);
+              }
+            }
+          }
+        }
       }
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 0 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (p == 0)
+          {
+            if (j == 0)
+            {
+              f_out[index2] += (v[index1]);
+            }
+            else
+            {
+              f_out[index2] += (0.75 * v[index1]
+                                + 0.25 * v[index1 - Mhalf]);
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              f_out[index2] += (0.75 * v[index1]
+                                + 0.25 * v[index1 - MNhalf]);
+            }
+            else
+            {
+              f_out[index2] += (0.5625 * v[index1]
+                                + 0.1875 * (v[index1 - Mhalf]
+                                            + v[index1 - MNhalf])
+                                + 0.0625 * v[index1 - MNhalf - Mhalf]);
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.5 * (v[index1]
+                                             + v[index1 + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.375 * (v[index1]
+                                               + v[index1 + 1])
+                                      + 0.125 * (v[index1 - Mhalf]
+                                                 + v[index1 - Mhalf + 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.375 * (v[index1]
+                                               + v[index1 + 1])
+                                      + 0.125 * (v[index1 - MNhalf]
+                                                 + v[index1 - MNhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + 1] += (0.28125 * (v[index1]
+                                                 + v[index1 + 1])
+                                      + 0.09375 * (v[index1 - Mhalf]
+                                                   + v[index1 - Mhalf + 1]
+                                                   + v[index1 - MNhalf]
+                                                   + v[index1 - MNhalf + 1])
+                                      + 0.03125 * (v[index1 - MNhalf - Mhalf]
+                                                   + v[index1 - MNhalf - Mhalf + 1]));
+              }
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + M] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 + Mhalf]);
+            }
+            else
+            {
+              f_out[index2 + M] += (v[index1]);
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + M] += (0.5625 * v[index1]
+                                    + 0.1875 * (v[index1 + Mhalf]
+                                                + v[index1 - MNhalf])
+                                    + 0.0625 * v[index1 - MNhalf + Mhalf]);
+            }
+            else
+            {
+              f_out[index2 + M] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 - MNhalf]);
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.375 * (v[index1]
+                                                   + v[index1 + 1])
+                                          + 0.125 * (v[index1 + Mhalf]
+                                                     + v[index1 + Mhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.5 * (v[index1]
+                                                 + v[index1 + 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.28125 * (v[index1]
+                                                     + v[index1 + 1])
+                                          + 0.09375 * (v[index1 + Mhalf]
+                                                       + v[index1 + Mhalf + 1]
+                                                       + v[index1 - MNhalf]
+                                                       + v[index1 - MNhalf + 1])
+                                          + 0.03125 * (v[index1 - MNhalf + Mhalf]
+                                                       + v[index1 - MNhalf + Mhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.375 * (v[index1]
+                                                   + v[index1 + 1])
+                                          + 0.125 * (v[index1 - MNhalf]
+                                                     + v[index1 - MNhalf + 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              f_out[index2 + MN] += (0.75 * v[index1]
+                                     + 0.25 * v[index1 + MNhalf]);
+            }
+            else
+            {
+              f_out[index2 + MN] += (0.5625 * v[index1]
+                                     + 0.1875 * (v[index1 - Mhalf]
+                                                 + v[index1 + MNhalf])
+                                     + 0.0625 * v[index1 + MNhalf - Mhalf]);
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              f_out[index2 + MN] += (v[index1]);
+            }
+            else
+            {
+              f_out[index2 + MN] += (0.75 * v[index1]
+                                     + 0.25 * v[index1 - Mhalf]);
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.375 * (v[index1]
+                                                    + v[index1 + 1])
+                                           + 0.125 * (v[index1 + MNhalf]
+                                                      + v[index1 + MNhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.28125 * (v[index1]
+                                                      + v[index1 + 1])
+                                           + 0.09375 * (v[index1 - Mhalf]
+                                                        + v[index1 - Mhalf + 1]
+                                                        + v[index1 + MNhalf]
+                                                        + v[index1 + MNhalf + 1])
+                                           + 0.03125 * (v[index1 + MNhalf - Mhalf]
+                                                        + v[index1 + MNhalf - Mhalf + 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.5 * (v[index1]
+                                                  + v[index1 + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.375 * (v[index1]
+                                                    + v[index1 + 1])
+                                           + 0.125 * (v[index1 - Mhalf]
+                                                      + v[index1 - Mhalf + 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + MN + M] += (0.5625 * v[index1]
+                                         + 0.1875 * (v[index1 + Mhalf]
+                                                     + v[index1 + MNhalf])
+                                         + 0.0625 * v[index1 + MNhalf + Mhalf]);
+            }
+            else
+            {
+              f_out[index2 + MN + M] += (0.75 * v[index1]
+                                         + 0.25 * v[index1 + MNhalf]);
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + MN + M] += (0.75 * v[index1]
+                                         + 0.25 * v[index1 + Mhalf]);
+            }
+            else
+            {
+              f_out[index2 + MN + M] += (v[index1]);
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.28125 * (v[index1]
+                                                          + v[index1 + 1])
+                                               + 0.09375 * (v[index1 + Mhalf]
+                                                            + v[index1 + Mhalf + 1]
+                                                            + v[index1 + MNhalf]
+                                                            + v[index1 + MNhalf + 1])
+                                               + 0.03125 * (v[index1 + MNhalf + Mhalf]
+                                                            + v[index1 + MNhalf + Mhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.375 * (v[index1]
+                                                        + v[index1 + 1])
+                                               + 0.125 * (v[index1 + MNhalf]
+                                                          + v[index1 + MNhalf + 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.375 * (v[index1]
+                                                        + v[index1 + 1])
+                                               + 0.125 * (v[index1 + Mhalf]
+                                                          + v[index1 + Mhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.5 * (v[index1]
+                                                      + v[index1 + 1]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 0 && N % 2 == 1 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (p == 0)
+          {
+            if (i == 0)
+            {
+              f_out[index2] += (v[index1]);
+            }
+            else
+            {
+              f_out[index2] += (0.75 * v[index1]
+                                + 0.25 * v[index1 - 1]);
+            }
+          }
+          else
+          {
+            if (i == 0)
+            {
+              f_out[index2] += (0.75 * v[index1]
+                                + 0.25 * v[index1 - MNhalf]);
+            }
+            else
+            {
+              f_out[index2] += (0.5625 * v[index1]
+                                + 0.1875 * (v[index1 - 1]
+                                            + v[index1 - MNhalf])
+                                + 0.0625 * v[index1 - MNhalf - 1]);
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 + 1]);
+            }
+            else
+            {
+              f_out[index2 + 1] += (v[index1]);
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.5625 * v[index1]
+                                    + 0.1875 * (v[index1 + 1]
+                                                + v[index1 - MNhalf])
+                                    + 0.0625 * v[index1 - MNhalf + 1]);
+            }
+            else
+            {
+              f_out[index2 + 1] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 - MNhalf]);
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + M] += (0.5 * (v[index1]
+                                             + v[index1 + Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + M] += (0.375 * (v[index1]
+                                               + v[index1 + Mhalf])
+                                      + 0.125 * (v[index1 - 1]
+                                                 + v[index1 + Mhalf - 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + M] += (0.375 * (v[index1]
+                                               + v[index1 + Mhalf])
+                                      + 0.125 * (v[index1 - MNhalf]
+                                                 + v[index1 - MNhalf + Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + M] += (0.28125 * (v[index1]
+                                                 + v[index1 + Mhalf])
+                                      + 0.09375 * (v[index1 - 1]
+                                                   + v[index1 + Mhalf - 1]
+                                                   + v[index1 - MNhalf]
+                                                   + v[index1 - MNhalf + Mhalf])
+                                      + 0.03125 * (v[index1 - MNhalf - 1]
+                                                   + v[index1 - MNhalf + Mhalf - 1]));
+              }
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.375 * (v[index1]
+                                                   + v[index1 + Mhalf])
+                                          + 0.125 * (v[index1 + 1]
+                                                     + v[index1 + Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + M + 1] += (0.5 * (v[index1]
+                                                 + v[index1 + Mhalf]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.28125 * (v[index1]
+                                                     + v[index1 + Mhalf])
+                                          + 0.09375 * (v[index1 + 1]
+                                                       + v[index1 + Mhalf + 1]
+                                                       + v[index1 - MNhalf]
+                                                       + v[index1 - MNhalf + Mhalf])
+                                          + 0.03125 * (v[index1 - MNhalf + 1]
+                                                       + v[index1 - MNhalf + Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + M + 1] += (0.375 * (v[index1]
+                                                   + v[index1 + Mhalf])
+                                          + 0.125 * (v[index1 - MNhalf]
+                                                     + v[index1 - MNhalf + Mhalf]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (i == 0)
+            {
+              f_out[index2 + MN] += (0.75 * v[index1]
+                                     + 0.25 * v[index1 + MNhalf]);
+            }
+            else
+            {
+              f_out[index2 + MN] += (0.5625 * v[index1]
+                                     + 0.1875 * (v[index1 - 1]
+                                                 + v[index1 + MNhalf])
+                                     + 0.0625 * v[index1 + MNhalf - 1]);
+            }
+          }
+          else
+          {
+            if (i == 0)
+            {
+              f_out[index2 + MN] += (v[index1]);
+            }
+            else
+            {
+              f_out[index2 + MN] += (0.75 * v[index1]
+                                     + 0.25 * v[index1 - 1]);
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + MN + 1] += (0.5625 * v[index1]
+                                         + 0.1875 * (v[index1 + 1]
+                                                     + v[index1 + MNhalf])
+                                         + 0.0625 * v[index1 + MNhalf + 1]);
+            }
+            else
+            {
+              f_out[index2 + MN + 1] += (0.75 * v[index1]
+                                         + 0.25 * v[index1 + MNhalf]);
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + MN + 1] += (0.75 * v[index1]
+                                         + 0.25 * v[index1 + 1]);
+            }
+            else
+            {
+              f_out[index2 + MN + 1] += (v[index1]);
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.375 * (v[index1]
+                                                    + v[index1 + Mhalf])
+                                           + 0.125 * (v[index1 + MNhalf]
+                                                      + v[index1 + MNhalf + Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.28125 * (v[index1]
+                                                      + v[index1 + Mhalf])
+                                           + 0.09375 * (v[index1 - 1]
+                                                        + v[index1 + Mhalf - 1]
+                                                        + v[index1 + MNhalf]
+                                                        + v[index1 + MNhalf + Mhalf])
+                                           + 0.03125 * (v[index1 + MNhalf - 1]
+                                                        + v[index1 + MNhalf + Mhalf - 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.5 * (v[index1]
+                                                  + v[index1 + Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.375 * (v[index1]
+                                                    + v[index1 + Mhalf])
+                                           + 0.125 * (v[index1 - 1]
+                                                      + v[index1 + Mhalf - 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.28125 * (v[index1]
+                                                          + v[index1 + Mhalf])
+                                               + 0.09375 * (v[index1 + 1]
+                                                            + v[index1 + Mhalf + 1]
+                                                            + v[index1 + MNhalf]
+                                                            + v[index1 + MNhalf + Mhalf])
+                                               + 0.03125 * (v[index1 + MNhalf + 1]
+                                                            + v[index1 + MNhalf + Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.375 * (v[index1]
+                                                        + v[index1 + Mhalf])
+                                               + 0.125 * (v[index1 + MNhalf]
+                                                          + v[index1 + MNhalf + Mhalf]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.375 * (v[index1]
+                                                        + v[index1 + Mhalf])
+                                               + 0.125 * (v[index1 + 1]
+                                                          + v[index1 + Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.5 * (v[index1]
+                                                      + v[index1 + Mhalf]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 1 && P % 2 == 0)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (p == 0)
+          {
+            f_out[index2] += (v[index1]);
+          }
+          else
+          {
+            f_out[index2] += (0.75 * v[index1]
+                              + 0.25 * v[index1 - MNhalf]);
+          }
+          
+          if (p == 0)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.5 * (v[index1]
+                                           + v[index1 + 1]));
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.375 * (v[index1]
+                                             + v[index1 + 1])
+                                    + 0.125 * (v[index1 - MNhalf]
+                                               + v[index1 - MNhalf + 1]));
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + M] += (0.5 * (v[index1]
+                                           + v[index1 + Mhalf]));
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + M] += (0.375 * (v[index1]
+                                             + v[index1 + Mhalf])
+                                    + 0.125 * (v[index1 - MNhalf]
+                                               + v[index1 - MNhalf + Mhalf]));
+            }
+          }
+          
+          if (p == 0)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.25 * (v[index1]
+                                                  + v[index1 + 1]
+                                                  + v[index1 + Mhalf]
+                                                  + v[index1 + Mhalf + 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + M + 1] += (0.1875 * (v[index1]
+                                                    + v[index1 + 1]
+                                                    + v[index1 + Mhalf]
+                                                    + v[index1 + Mhalf + 1])
+                                          + 0.0625 * (v[index1 - MNhalf]
+                                                      + v[index1 - MNhalf + 1]
+                                                      + v[index1 - MNhalf + Mhalf]
+                                                      + v[index1 - MNhalf + Mhalf + 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            f_out[index2 + MN] += (0.75 * v[index1]
+                                   + 0.25 * v[index1 + MNhalf]);
+          }
+          else
+          {
+            f_out[index2 + MN] += (v[index1]);
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + MN + 1] += (0.375 * (v[index1]
+                                                  + v[index1 + 1])
+                                         + 0.125 * (v[index1 + MNhalf]
+                                                    + v[index1 + MNhalf + 1]));
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + MN + 1] += (0.5 * (v[index1]
+                                                + v[index1 + 1]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + MN + M] += (0.375 * (v[index1]
+                                                  + v[index1 + Mhalf])
+                                         + 0.125 * (v[index1 + MNhalf]
+                                                    + v[index1 + MNhalf + Mhalf]));
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + MN + M] += (0.5 * (v[index1]
+                                                + v[index1 + Mhalf]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.1875 * (v[index1]
+                                                         + v[index1 + 1]
+                                                         + v[index1 + Mhalf]
+                                                         + v[index1 + Mhalf + 1])
+                                               + 0.0625 * (v[index1 + MNhalf]
+                                                           + v[index1 + MNhalf + 1]
+                                                           + v[index1 + MNhalf + Mhalf]
+                                                           + v[index1 + MNhalf + Mhalf + 1]));
+              }
+            }
+          }
+          else
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.25 * (v[index1]
+                                                       + v[index1 + 1]
+                                                       + v[index1 + Mhalf]
+                                                       + v[index1 + Mhalf + 1]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 0 && N % 2 == 0 && P % 2 == 1)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (j == 0)
+          {
+            if (i == 0)
+            {
+              f_out[index2] += (v[index1]);
+            }
+            else
+            {
+              f_out[index2] += (0.75 * v[index1]
+                                + 0.25 * v[index1 - 1]);
+            }
+          }
+          else
+          {
+            if (i == 0)
+            {
+              f_out[index2] += (0.75 * v[index1]
+                                + 0.25 * v[index1 - Mhalf]);
+            }
+            else
+            {
+              f_out[index2] += (0.5625 * v[index1]
+                                + 0.1875 * (v[index1 - 1]
+                                            + v[index1 - Mhalf])
+                                + 0.0625 * v[index1 - Mhalf - 1]);
+            }
+          }
+          
+          if (j == 0)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 + 1]);
+            }
+            else
+            {
+              f_out[index2 + 1] += (v[index1]);
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.5625 * v[index1]
+                                    + 0.1875 * (v[index1 + 1]
+                                                + v[index1 - Mhalf])
+                                    + 0.0625 * v[index1 - Mhalf + 1]);
+            }
+            else
+            {
+              f_out[index2 + 1] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 - Mhalf]);
+            }
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            if (i == 0)
+            {
+              f_out[index2 + M] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 + Mhalf]);
+            }
+            else
+            {
+              f_out[index2 + M] += (0.5625 * v[index1]
+                                    + 0.1875 * (v[index1 - 1]
+                                                + v[index1 + Mhalf])
+                                    + 0.0625 * v[index1 + Mhalf - 1]);
+            }
+          }
+          else
+          {
+            if (i == 0)
+            {
+              f_out[index2 + M] += (v[index1]);
+            }
+            else
+            {
+              f_out[index2 + M] += (0.75 * v[index1]
+                                    + 0.25 * v[index1 - 1]);
+            }
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + M + 1] += (0.5625 * v[index1]
+                                        + 0.1875 * (v[index1 + 1]
+                                                    + v[index1 + Mhalf])
+                                        + 0.0625 * v[index1 + Mhalf + 1]);
+            }
+            else
+            {
+              f_out[index2 + M + 1] += (0.75 * v[index1]
+                                        + 0.25 * v[index1 + Mhalf]);
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + M + 1] += (0.75 * v[index1]
+                                        + 0.25 * v[index1 + 1]);
+            }
+            else
+            {
+              f_out[index2 + M + 1] += (v[index1]);
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN] += (0.5 * (v[index1]
+                                              + v[index1 + MNhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN] += (0.375 * (v[index1]
+                                                + v[index1 + MNhalf])
+                                       + 0.125 * (v[index1 - 1]
+                                                  + v[index1 + MNhalf - 1]));
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN] += (0.375 * (v[index1]
+                                                + v[index1 + MNhalf])
+                                       + 0.125 * (v[index1 - Mhalf]
+                                                  + v[index1 + MNhalf - Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN] += (0.28125 * (v[index1]
+                                                  + v[index1 + MNhalf])
+                                       + 0.09375 * (v[index1 - 1]
+                                                    + v[index1 - Mhalf]
+                                                    + v[index1 + MNhalf - 1]
+                                                    + v[index1 + MNhalf - Mhalf])
+                                       + 0.03125 * (v[index1 - Mhalf - 1]
+                                                    + v[index1 + MNhalf - Mhalf - 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.375 * (v[index1]
+                                                    + v[index1 + MNhalf])
+                                           + 0.125 * (v[index1 + 1]
+                                                      + v[index1 + MNhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + 1] += (0.5 * (v[index1]
+                                                  + v[index1 + MNhalf]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.28125 * (v[index1]
+                                                      + v[index1 + MNhalf])
+                                           + 0.09375 * (v[index1 + 1]
+                                                        + v[index1 - Mhalf]
+                                                        + v[index1 + MNhalf + 1]
+                                                        + v[index1 + MNhalf - Mhalf])
+                                           + 0.03125 * (v[index1 - Mhalf + 1]
+                                                        + v[index1 + MNhalf - Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + 1] += (0.375 * (v[index1]
+                                                    + v[index1 + MNhalf])
+                                           + 0.125 * (v[index1 - Mhalf]
+                                                      + v[index1 + MNhalf - Mhalf]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.375 * (v[index1]
+                                                    + v[index1 + MNhalf])
+                                           + 0.125 * (v[index1 + Mhalf]
+                                                      + v[index1 + MNhalf + Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.28125 * (v[index1]
+                                                      + v[index1 + MNhalf])
+                                           + 0.09375 * (v[index1 - 1]
+                                                        + v[index1 + Mhalf]
+                                                        + v[index1 + MNhalf - 1]
+                                                        + v[index1 + MNhalf + Mhalf])
+                                           + 0.03125 * (v[index1 + Mhalf - 1]
+                                                        + v[index1 + MNhalf + Mhalf - 1]));
+              }
+            }
+            else
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.5 * (v[index1]
+                                                  + v[index1 + MNhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.375 * (v[index1]
+                                                    + v[index1 + MNhalf])
+                                           + 0.125 * (v[index1 - 1]
+                                                      + v[index1 + MNhalf - 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.28125 * (v[index1]
+                                                          + v[index1 + MNhalf])
+                                               + 0.09375 * (v[index1 + 1]
+                                                            + v[index1 + Mhalf]
+                                                            + v[index1 + MNhalf + 1]
+                                                            + v[index1 + MNhalf + Mhalf])
+                                               + 0.03125 * (v[index1 + Mhalf + 1]
+                                                            + v[index1 + MNhalf + Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.375 * (v[index1]
+                                                        + v[index1 + MNhalf])
+                                               + 0.125 * (v[index1 + Mhalf]
+                                                          + v[index1 + MNhalf + Mhalf]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.375 * (v[index1]
+                                                        + v[index1 + MNhalf])
+                                               + 0.125 * (v[index1 + 1]
+                                                          + v[index1 + MNhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.5 * (v[index1]
+                                                      + v[index1 + MNhalf]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 0 && P % 2 == 1)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (j == 0)
+          {
+            f_out[index2] += (v[index1]);
+          }
+          else
+          {
+            f_out[index2] += (0.75 * v[index1]
+                              + 0.25 * v[index1 - Mhalf]);
+          }
+          
+          if (j == 0)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.5 * (v[index1]
+                                           + v[index1 + 1]));
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + 1] += (0.375 * (v[index1]
+                                             + v[index1 + 1])
+                                    + 0.125 * (v[index1 - Mhalf]
+                                               + v[index1 - Mhalf + 1]));
+            }
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            f_out[index2 + M] += (0.75 * v[index1]
+                                  + 0.25 * v[index1 + Mhalf]);
+          }
+          else
+          {
+            f_out[index2 + M] += (v[index1]);
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + M + 1] += (0.375 * (v[index1]
+                                                 + v[index1 + 1])
+                                        + 0.125 * (v[index1 + Mhalf]
+                                                   + v[index1 + Mhalf + 1]));
+            }
+          }
+          else
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + M + 1] += (0.5 * (v[index1]
+                                               + v[index1 + 1]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              f_out[index2 + MN] += (0.5 * (v[index1]
+                                            + v[index1 + MNhalf]));
+            }
+            else
+            {
+              f_out[index2 + MN] += (0.375 * (v[index1]
+                                              + v[index1 + MNhalf])
+                                     + 0.125 * (v[index1 - Mhalf]
+                                                + v[index1 + MNhalf - Mhalf]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j == 0)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.25 * (v[index1]
+                                                   + v[index1 + 1]
+                                                   + v[index1 + MNhalf]
+                                                   + v[index1 + MNhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + 1] += (0.1875 * (v[index1]
+                                                     + v[index1 + 1]
+                                                     + v[index1 + MNhalf]
+                                                     + v[index1 + MNhalf + 1])
+                                           + 0.0625 * (v[index1 - Mhalf]
+                                                       + v[index1 - Mhalf + 1]
+                                                       + v[index1 + MNhalf - Mhalf]
+                                                       + v[index1 + MNhalf - Mhalf + 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + MN + M] += (0.375 * (v[index1]
+                                                  + v[index1 + MNhalf])
+                                         + 0.125 * (v[index1 + Mhalf]
+                                                    + v[index1 + MNhalf + Mhalf]));
+            }
+            else
+            {
+              f_out[index2 + MN + M] += (0.5 * (v[index1]
+                                                + v[index1 + MNhalf]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.1875 * (v[index1]
+                                                         + v[index1 + 1]
+                                                         + v[index1 + MNhalf]
+                                                         + v[index1 + MNhalf + 1])
+                                               + 0.0625 * (v[index1 + Mhalf]
+                                                           + v[index1 + Mhalf + 1]
+                                                           + v[index1 + MNhalf + Mhalf]
+                                                           + v[index1 + MNhalf + Mhalf + 1]));
+              }
+            }
+            else
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.25 * (v[index1]
+                                                       + v[index1 + 1]
+                                                       + v[index1 + MNhalf]
+                                                       + v[index1 + MNhalf + 1]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 0 && N % 2 == 1 && P % 2 == 1)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          if (i == 0)
+          {
+            f_out[index2] += (v[index1]);
+          }
+          else
+          {
+            f_out[index2] += (0.75 * v[index1]
+                              + 0.25 * v[index1 - 1]);
+          }
+          
+          if (i < Mhalf - 1)
+          {
+            f_out[index2 + 1] += (0.75 * v[index1]
+                                  + 0.25 * v[index1 + 1]);
+          }
+          else
+          {
+            f_out[index2 + 1] += (v[index1]);
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            if (i == 0)
+            {
+              f_out[index2 + M] += (0.5 * (v[index1]
+                                           + v[index1 + Mhalf]));
+            }
+            else
+            {
+              f_out[index2 + M] += (0.375 * (v[index1]
+                                             + v[index1 + Mhalf])
+                                    + 0.125 * (v[index1 - 1]
+                                               + v[index1 + Mhalf - 1]));
+            }
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + M + 1] += (0.375 * (v[index1]
+                                                 + v[index1 + Mhalf])
+                                        + 0.125 * (v[index1 + 1]
+                                                   + v[index1 + Mhalf + 1]));
+            }
+            else
+            {
+              f_out[index2 + M + 1] += (0.5 * (v[index1]
+                                               + v[index1 + Mhalf]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (i == 0)
+            {
+              f_out[index2 + MN] += (0.5 * (v[index1]
+                                            + v[index1 + MNhalf]));
+            }
+            else
+            {
+              f_out[index2 + MN] += (0.375 * (v[index1]
+                                              + v[index1 + MNhalf])
+                                     + 0.125 * (v[index1 - 1]
+                                                + v[index1 + MNhalf - 1]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + MN + 1] += (0.375 * (v[index1]
+                                                  + v[index1 + MNhalf])
+                                         + 0.125 * (v[index1 + 1]
+                                                    + v[index1 + MNhalf + 1]));
+            }
+            else
+            {
+              f_out[index2 + MN + 1] += (0.5 * (v[index1]
+                                                + v[index1 + MNhalf]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i == 0)
+              {
+                f_out[index2 + MN + M] += (0.25 * (v[index1]
+                                                   + v[index1 + Mhalf]
+                                                   + v[index1 + MNhalf]
+                                                   + v[index1 + MNhalf + Mhalf]));
+              }
+              else
+              {
+                f_out[index2 + MN + M] += (0.1875 * (v[index1]
+                                                     + v[index1 + Mhalf]
+                                                     + v[index1 + MNhalf]
+                                                     + v[index1 + MNhalf + Mhalf])
+                                           + 0.0625 * (v[index1 - 1]
+                                                       + v[index1 + Mhalf - 1]
+                                                       + v[index1 + MNhalf - 1]
+                                                       + v[index1 + MNhalf + Mhalf - 1]));
+              }
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.1875 * (v[index1]
+                                                         + v[index1 + Mhalf]
+                                                         + v[index1 + MNhalf]
+                                                         + v[index1 + MNhalf + Mhalf])
+                                               + 0.0625 * (v[index1 + 1]
+                                                           + v[index1 + Mhalf + 1]
+                                                           + v[index1 + MNhalf + 1]
+                                                           + v[index1 + MNhalf + Mhalf + 1]));
+              }
+              else
+              {
+                f_out[index2 + MN + M + 1] += (0.25 * (v[index1]
+                                                       + v[index1 + Mhalf]
+                                                       + v[index1 + MNhalf]
+                                                       + v[index1 + MNhalf + Mhalf]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (M % 2 == 1 && N % 2 == 1 && P % 2 == 1)
+  {
+    for (p = 0; p < Phalf; p++)
+    {
+      for (j = 0; j < Nhalf; j++)
+      {
+        for (i = 0; i < Mhalf; i++)
+        {
+          index1 = (p * Nhalf + j) * Mhalf + i;
+          index2 = (2 * p * N + 2 * j) * M + 2 * i;
+          f_out[index2] += (v[index1]);
+          
+          if (i < Mhalf - 1)
+          {
+            f_out[index2 + 1] += (0.5 * (v[index1]
+                                         + v[index1 + 1]));
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            f_out[index2 + M] += (0.5 * (v[index1]
+                                         + v[index1 + Mhalf]));
+          }
+          
+          if (j < Nhalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + M + 1] += (0.25 * (v[index1]
+                                                + v[index1 + 1]
+                                                + v[index1 + Mhalf]
+                                                + v[index1 + Mhalf + 1]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            f_out[index2 + MN] += (0.5 * (v[index1]
+                                          + v[index1 + MNhalf]));
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (i < Mhalf - 1)
+            {
+              f_out[index2 + MN + 1] += (0.25 * (v[index1]
+                                                 + v[index1 + 1]
+                                                 + v[index1 + MNhalf]
+                                                 + v[index1 + MNhalf + 1]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              f_out[index2 + MN + M] += (0.25 * (v[index1]
+                                                 + v[index1 + Mhalf]
+                                                 + v[index1 + MNhalf]
+                                                 + v[index1 + MNhalf + Mhalf]));
+            }
+          }
+          
+          if (p < Phalf - 1)
+          {
+            if (j < Nhalf - 1)
+            {
+              if (i < Mhalf - 1)
+              {
+                f_out[index2 + MN + M + 1] += (0.125 * (v[index1]
+                                                        + v[index1 + 1]
+                                                        + v[index1 + Mhalf]
+                                                        + v[index1 + Mhalf + 1]
+                                                        + v[index1 + MNhalf]
+                                                        + v[index1 + MNhalf + 1]
+                                                        + v[index1 + MNhalf + Mhalf]
+                                                        + v[index1 + MNhalf + Mhalf + 1]));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -1727,13 +4141,6 @@ poisson_multigrid3D(double *f, double *d,
   }
   
   upsample3D(r, M, N, P, v, Mhalf, Nhalf, Phalf, f_out);
-  
-  /* Post-smoothing for odd border lines. */
-  if (M % 2 == 1 || N % 2 == 1 || P % 2 == 1)
-  {
-    for (k = 0; k < n2 + 2; k++)
-      gauss_seidel_odd_border3D(f_out, d, M, N, P);
-  }
   
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)

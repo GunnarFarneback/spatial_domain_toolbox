@@ -1,3 +1,13 @@
+2005-09-29  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* conv3_readable.c moved to dev/conv3_readable.c
+
+	* dev/generate_antigradient_code.pike: New program.
+
+	* dev/: New directory.
+
+	* antigradient.c: Major revisions.
+
 2005-07-01  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* antigradient.m: New function.
