@@ -32,7 +32,6 @@ arrayloop.m
 compute_displacement.m
 conv3.c
 conv3.m
-conv3_readable.c
 estimate_disparity.m
 estimate_displacement.m
 evaluate_velocity.m
