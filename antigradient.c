@@ -677,6 +677,9 @@ poisson_full_multigrid2D(double *rhs, int number_of_iterations,
     
     /* Upsample the coarse result. */
     upsample2D(rhs, M, N, f_coarse, Mhalf, Nhalf, f_out);
+
+    mxFree(f_coarse);
+    mxFree(rhs_downsampled);
   }
   
   /* Perform number_of_iterations standard multigrid cycles. */

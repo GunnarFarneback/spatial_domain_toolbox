@@ -1,3 +1,7 @@
+2005-10-14  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* antigradient.c: Added missing freeing.
+
 2005-09-29  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* conv3_readable.c moved to dev/conv3_readable.c
