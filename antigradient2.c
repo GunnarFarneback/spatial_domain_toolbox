@@ -17,8 +17,8 @@
 
 /*************** 2D ****************/
 
-void
-solve_directly2D(double *f, double *rhs, double *f_out,
+static void
+solve_directly2D(double *f, double *lhs, double *rhs, double *f_out,
 		 int M, int N)
 {
   int s = M * N;
@@ -45,17 +45,26 @@ solve_directly2D(double *f, double *rhs, double *f_out,
   for (j = 0; j < N; j++)
     for (i = 0; i < M; i++)
     {
-      A[k + s * (j*M+i)] = -4;
+      int index = j*M+i;
+      A[k + s * (j*M+i)] = lhs[9 * index];
       if (i > 0)
-	A[k + s * (j*M+i-1)] = 1 + (i == M-1);
+	A[k + s * (j*M+i-1)] = lhs[9 * index + 1];
       if (i < M-1)
-	A[k + s * (j*M+i+1)] = 1 + (i == 0);
+	A[k + s * (j*M+i+1)] = lhs[9 * index + 2];
       if (j > 0)
-	A[k + s * ((j-1)*M+i)] = 1 + (j == N-1);
+	A[k + s * ((j-1)*M+i)] = lhs[9 * index + 3];
       if (j < N-1)
-	A[k + s * ((j+1)*M+i)] = 1 + (j == 0);
+	A[k + s * ((j+1)*M+i)] = lhs[9 * index + 4];
+      if (i > 0 && j > 0)
+	A[k + s * ((j-1)*M+i-1)] = lhs[9 * index + 5];
+      if (i > 0 && j < N-1)
+	A[k + s * ((j+1)*M+i-1)] = lhs[9 * index + 6];
+      if (i < M-1 && j > 0)
+	A[k + s * ((j-1)*M+i+1)] = lhs[9 * index + 7];
+      if (i < M-1 && j < N-1)
+	A[k + s * ((j+1)*M+i+1)] = lhs[9 * index + 8];
       
-      b[k] = rhs[i+j*M];
+      b[k] = rhs[index];
       
       k++;
     }
@@ -74,8 +83,8 @@ solve_directly2D(double *f, double *rhs, double *f_out,
 
 
 /* Gauss-Seidel smoothing iteration. Red-black ordering. */
-void
-gauss_seidel2D(double *f, double *d, int M, int N)
+static void
+gauss_seidel2D(double *f, double *A, double *d, int M, int N)
 {
   int pass;
   int i, j;
@@ -91,32 +100,38 @@ gauss_seidel2D(double *f, double *d, int M, int N)
 	  continue;
 	
 	index = i + j * M;
-	new_f = -d[index];
-	if (i == 0)
-	  new_f += f[index + 1];
-	else
-	  new_f += f[index - 1];
-	if (i == M-1)
-	  new_f += f[index - 1];
-	else
-	  new_f += f[index + 1];
+	new_f = d[index];
+	if (i > 0)
+	  new_f -= A[9 * index + 1] * f[index - 1];
+
+	if (i < M-1)
+	  new_f -= A[9 * index + 2] * f[index + 1];
+
+	if (j > 0)
+	  new_f -= A[9 * index + 3] * f[index - M];
+
+	if (j < N-1)
+	  new_f -= A[9 * index + 4] * f[index + M];
 	
-	if (j == 0)
-	  new_f += f[index + M];
-	else
-	  new_f += f[index - M];
-	if (j == N-1)
-	  new_f += f[index - M];
-	else
-	  new_f += f[index + M];
-	
-	f[index] = 0.25 * new_f;
+	if (i > 0 && j > 0)
+	  new_f -= A[9 * index + 5] * f[index - 1 - M];
+
+	if (i > 0 && j < N-1)
+	  new_f -= A[9 * index + 6] * f[index - 1 + M];
+
+	if (i < M-1 && j > 0)
+	  new_f -= A[9 * index + 7] * f[index + 1 - M];
+
+	if (i < M-1 && j < N-1)
+	  new_f -= A[9 * index + 8] * f[index + 1 + M];
+
+	f[index] = new_f / A[9 * index];
       }
   }
 }
 
 
-void
+static void
 downsample2D(double *rhs, int M, int N,
 	     double *rhs_coarse, int Mhalf, int Nhalf)
 {
@@ -298,8 +313,293 @@ downsample2D(double *rhs, int M, int N,
 }
 
 
+static void
+galerkin2D(double *lhs, int M, int N,
+	   double *lhs_coarse, int Mhalf, int Nhalf)
+{
+  int i, j;
+
+  for (j = 0; j < Nhalf; j++)
+    for (i = 0; i < Mhalf; i++)
+    {
+      int index1 = (j * Mhalf + i);
+      int index2 = (2 * j * M + 2 * i);
+      double stencil1[3][3];
+      double stencil2[5][5];
+      double stencil3[3][3];
+      int u, v;
+
+      for (u = 0; u < 5; u++)
+	for (v = 0; v < 5; v++)
+	{
+	  stencil2[u][v] = 0;
+	  if (u < 3 && v < 3)
+	  {
+	    stencil1[u][v] = 0;
+	    stencil3[u][v] = 0;
+	  }
+	}
+
+      if (M % 2 == 0 && N % 2 == 0)
+      {
+	stencil1[1][1] = 1;
+	stencil1[1][2] = 1;
+	stencil1[2][1] = 1;
+	stencil1[2][2] = 1;
+      }
+      
+      if (M % 2 == 1 && N % 2 == 0)
+      {
+	stencil1[1][1] = 1;
+	stencil1[1][2] = 1;
+	if (i < Mhalf - 1)
+	{
+	  stencil1[2][1] = 0.5 * (1 + (i == 0));
+	  stencil1[2][2] = 0.5 * (1 + (i == 0));
+	}
+	if (i > 0)
+	{
+	  stencil1[0][1] = 0.5 * (1 + (i == Mhalf - 1));
+	  stencil1[0][2] = 0.5 * (1 + (i == Mhalf - 1));
+	}
+      }
+
+      if (M % 2 == 0 && N % 2 == 1)
+      {
+	stencil1[1][1] = 1;
+	stencil1[2][1] = 1;
+	if (j < Nhalf - 1)
+	{
+	  stencil1[1][2] = 0.5 * (1 + (j == 0));
+	  stencil1[2][2] = 0.5 * (1 + (j == 0));
+	}
+	if (j > 0)
+	{
+	  stencil1[1][0] = 0.5 * (1 + (j == Nhalf - 1));
+	  stencil1[2][0] = 0.5 * (1 + (j == Nhalf - 1));
+	}
+      }
+      
+      if (M % 2 == 1 && N % 2 == 1)
+      {
+	stencil1[1][1] = 1;
+	stencil1[2][1] = 0.5;
+	stencil1[0][1] = 0.5;
+	stencil1[1][2] = 0.5;
+	stencil1[1][0] = 0.5;
+	stencil1[2][2] = 0.25;
+	stencil1[0][2] = 0.25;
+	stencil1[2][0] = 0.25;
+	stencil1[0][0] = 0.25;
+
+	if (i == 0)
+	  for (u = 0; u < 3; u++)
+	  {
+	    stencil1[2][u] += stencil1[0][u];
+	    stencil1[0][u] = 0;
+	  }
+
+	if (i == Mhalf - 1)
+	  for (u = 0; u < 3; u++)
+	  {
+	    stencil1[0][u] += stencil1[2][u];
+	    stencil1[2][u] = 0;
+	  }
+
+	if (j == 0)
+	  for (u = 0; u < 3; u++)
+	  {
+	    stencil1[u][2] += stencil1[u][0];
+	    stencil1[u][0] = 0;
+	  }
+
+	if (j == Nhalf - 1)
+	  for (u = 0; u < 3; u++)
+	  {
+	    stencil1[u][0] += stencil1[u][2];
+	    stencil1[u][2] = 0;
+	  }
+      }
+
+#if 0
+      mexPrintf("i=%d j=%d stencil1:\n", i, j);
+      for (u = 0; u < 3; u++) {
+	for (v = 0; v < 3; v++)
+	  mexPrintf("%f ", stencil1[u][v]);
+	mexPrintf("\n");
+      }
+      mexPrintf("\n");
+#endif
+      
+      for (u = 0; u < 3; u++)
+	for (v = 0; v < 3; v++)
+	{
+	  if (stencil1[u][v] != 0)
+	  {
+	    int index = 9 * (index2 + (u-1) + M*(v-1));
+	    stencil2[u+1][v+1] += stencil1[u][v] * lhs[index];
+	    stencil2[u  ][v+1] += stencil1[u][v] * lhs[index + 1];
+	    stencil2[u+2][v+1] += stencil1[u][v] * lhs[index + 2];
+	    stencil2[u+1][v  ] += stencil1[u][v] * lhs[index + 3];
+	    stencil2[u+1][v+2] += stencil1[u][v] * lhs[index + 4];
+	    stencil2[u  ][v  ] += stencil1[u][v] * lhs[index + 5];
+	    stencil2[u  ][v+2] += stencil1[u][v] * lhs[index + 6];
+	    stencil2[u+2][v  ] += stencil1[u][v] * lhs[index + 7];
+	    stencil2[u+2][v+2] += stencil1[u][v] * lhs[index + 8];
+	  }
+	}
+
+#if 0
+      mexPrintf("i=%d j=%d stencil2:\n", i, j);
+      for (u = 0; u < 5; u++) {
+	for (v = 0; v < 5; v++)
+	  mexPrintf("%f ", stencil2[u][v]);
+	mexPrintf("\n");
+      }
+      mexPrintf("\n");
+#endif
+      
+      if (M % 2 == 0 && N % 2 == 0)
+      {
+	for (u = 1; u < 5; u++)
+	  for (v = 1; v < 5; v++)
+	  {
+	    double alpha1, alpha2;
+	    if (i == 0 && u < 3)
+	      alpha1 = 0;
+	    else if (i == Mhalf - 1 && u >= 3)
+	      alpha1 = 1;
+	    else if (u % 2 == 1)
+	      alpha1 = 0.75;
+	    else
+	      alpha1 = 0.25;
+
+	    if (j == 0 && v < 3)
+	      alpha2 = 0;
+	    else if (j == Nhalf - 1 && v >= 3)
+	      alpha2 = 1;
+	    else if (v % 2 == 1)
+	      alpha2 = 0.75;
+	    else
+	      alpha2 = 0.25;
+
+	    stencil3[(u-1)/2  ][(v-1)/2  ] += alpha1 * alpha2 * stencil2[u][v];
+	    stencil3[(u-1)/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
+	    stencil3[(u-1)/2+1][(v-1)/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
+	    stencil3[(u-1)/2+1][(v-1)/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	  }
+      }
+
+      if (M % 2 == 1 && N % 2 == 0)
+      {
+	for (u = 0; u < 5; u++)
+	  for (v = 1; v < 5; v++)
+	  {
+	    double alpha1, alpha2;
+	    if (u % 2 == 0)
+	      alpha1 = 1;
+	    else
+	      alpha1 = 0.5;
+	    
+	    if (j == 0 && v < 3)
+	      alpha2 = 0;
+	    else if (j == Nhalf - 1 && v >= 3)
+	      alpha2 = 1;
+	    else if (v % 2 == 1)
+	      alpha2 = 0.75;
+	    else
+	      alpha2 = 0.25;
+
+	    stencil3[u/2  ][(v-1)/2  ] += alpha1 * alpha2 * stencil2[u][v];
+	    stencil3[u/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
+	    if (u < 4)
+	    {
+	      stencil3[u/2+1][(v-1)/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
+	      stencil3[u/2+1][(v-1)/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	    }
+	  }
+      }
+
+      if (M % 2 == 0 && N % 2 == 1)
+      {
+	for (u = 1; u < 5; u++)
+	  for (v = 0; v < 5; v++)
+	  {
+	    double alpha1, alpha2;
+	    if (i == 0 && u < 3)
+	      alpha1 = 0;
+	    else if (i == Mhalf - 1 && u >= 3)
+	      alpha1 = 1;
+	    else if (u % 2 == 1)
+	      alpha1 = 0.75;
+	    else
+	      alpha1 = 0.25;
+
+	    if (v % 2 == 0)
+	      alpha2 = 1;
+	    else
+	      alpha2 = 0.5;
+	
+	    stencil3[(u-1)/2  ][v/2  ] += alpha1 * alpha2 * stencil2[u][v];
+	    if (v < 4)
+	      stencil3[(u-1)/2  ][v/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
+	    stencil3[(u-1)/2+1][v/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
+	    if (v < 4)
+	      stencil3[(u-1)/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	  }
+      }
+
+      if (M % 2 == 1 && N % 2 == 1)
+      {
+	for (u = 0; u < 5; u++)
+	  for (v = 0; v < 5; v++)
+	  {
+	    double alpha1, alpha2;
+	    if (u % 2 == 0)
+	      alpha1 = 1;
+	    else
+	      alpha1 = 0.5;
+	    
+	    if (v % 2 == 0)
+	      alpha2 = 1;
+	    else
+	      alpha2 = 0.5;
+
+	    stencil3[u/2  ][v/2  ] += alpha1 * alpha2 * stencil2[u][v];
+	    if (v < 4)
+	      stencil3[u/2  ][v/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
+	    if (u < 4)
+	      stencil3[u/2+1][v/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
+	    if (u < 4 && v < 4)
+	      stencil3[u/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	  }
+      }
+
+#if 0
+      mexPrintf("i=%d j=%d stencil3:\n", i, j);
+      for (u = 0; u < 3; u++) {
+	for (v = 0; v < 3; v++)
+	  mexPrintf("%f ", stencil3[u][v]);
+	mexPrintf("\n");
+      }
+      mexPrintf("\n");
+#endif
+      
+      lhs_coarse[9 * index1] = stencil3[1][1];
+      lhs_coarse[9 * index1 + 1] = stencil3[0][1];
+      lhs_coarse[9 * index1 + 2] = stencil3[2][1];
+      lhs_coarse[9 * index1 + 3] = stencil3[1][0];
+      lhs_coarse[9 * index1 + 4] = stencil3[1][2];
+      lhs_coarse[9 * index1 + 5] = stencil3[0][0];
+      lhs_coarse[9 * index1 + 6] = stencil3[0][2];
+      lhs_coarse[9 * index1 + 7] = stencil3[2][0];
+      lhs_coarse[9 * index1 + 8] = stencil3[2][2];
+    }
+}
+
+
 /* Upsample and apply correction. Bilinear interpolation. */
-void
+static void
 upsample2D(double *rhs, int M, int N,
 	   double *v, int Mhalf, int Nhalf,
 	   double *f_out)
@@ -564,8 +864,8 @@ upsample2D(double *rhs, int M, int N,
 
 
 /* Recursive multigrid function.*/
-void
-poisson_multigrid2D(double *f, double *d,
+static void
+poisson_multigrid2D(double *f, double *A, double *d,
 		    int n1, int n2, int nm,
 		    double *f_out,
 		    int M, int N, int *directly_solved)
@@ -574,6 +874,7 @@ poisson_multigrid2D(double *f, double *d,
   int k;
   double *r;
   double *r_downsampled;
+  double *A_downsampled;
   double *v;
   int Mhalf;
   int Nhalf;
@@ -581,7 +882,7 @@ poisson_multigrid2D(double *f, double *d,
   /* Solve a sufficiently small problem directly. */
   if (M < RECURSION_SIZE_LIMIT || N < RECURSION_SIZE_LIMIT)
   {
-    solve_directly2D(f, d, f_out, M, N);
+    solve_directly2D(f, A, d, f_out, M, N);
     *directly_solved = 1;
     return;
   }
@@ -592,7 +893,7 @@ poisson_multigrid2D(double *f, double *d,
   
   /* Pre-smoothing. */
   for (k = 0; k < n1; k++)
-    gauss_seidel2D(f_out, d, M, N);
+    gauss_seidel2D(f_out, A, d, M, N);
   
   /* Compute residual. */
   r = mxCalloc(M * N, sizeof(*r));
@@ -600,26 +901,30 @@ poisson_multigrid2D(double *f, double *d,
     for (i = 0; i < M; i++)
     {
       int index = j * M + i;
-      double residual = d[index] + 4 * f_out[index];
-      if (i == 0)
-	residual -= f_out[index + 1];
-      else
-	residual -= f_out[index - 1];
+      double residual = d[index] - A[9 * index] * f_out[index];
+      if (i > 0)
+	residual -= A[9 * index + 1] * f_out[index - 1];
       
-      if (i == M - 1)
-	residual -= f_out[index - 1];
-      else
-	residual -= f_out[index + 1];
+      if (i < M-1)
+	residual -= A[9 * index + 2] * f_out[index + 1];
       
-      if (j == 0)
-	residual -= f_out[index + M];
-      else
-	residual -= f_out[index - M];
+      if (j > 0)
+	residual -= A[9 * index + 3] * f_out[index - M];
       
-      if (j == N - 1)
-	residual -= f_out[index - M];
-      else
-	residual -= f_out[index + M];
+      if (j < N-1)
+	residual -= A[9 * index + 4] * f_out[index + M];
+
+      if (i > 0 && j > 0)
+	residual -= A[9 * index + 5] * f_out[index - 1 - M];
+      
+      if (i > 0 && j < N-1)
+	residual -= A[9 * index + 6] * f_out[index - 1 + M];
+      
+      if (i < M-1 && j > 0)
+	residual -= A[9 * index + 7] * f_out[index + 1 - M];
+      
+      if (i < M-1 && j < N-1)
+	residual -= A[9 * index + 8] * f_out[index + 1 + M];
       
       r[index] = residual;
     }
@@ -629,14 +934,16 @@ poisson_multigrid2D(double *f, double *d,
   Nhalf = (N + 1) / 2;
   r_downsampled = mxCalloc(Mhalf * Nhalf, sizeof(*r_downsampled));
   downsample2D(r, M, N, r_downsampled, Mhalf, Nhalf);
+  A_downsampled = mxCalloc(9 * Mhalf * Nhalf, sizeof(*A_downsampled));
+  galerkin2D(A, M, N, A_downsampled, Mhalf, Nhalf);
   
   /* Recurse to compute a correction. */
   v = mxCalloc(Mhalf * Nhalf, sizeof(*v));
   for (k = 0; k < nm; k++)
   {
     int directly_solved;
-    poisson_multigrid2D(v, r_downsampled, n1, n2, nm, v, Mhalf, Nhalf,
-			&directly_solved);
+    poisson_multigrid2D(v, A_downsampled, r_downsampled, n1, n2, nm, v,
+			Mhalf, Nhalf, &directly_solved);
     if (directly_solved)
       break;
   }
@@ -645,19 +952,21 @@ poisson_multigrid2D(double *f, double *d,
   
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)
-    gauss_seidel2D(f_out, d, M, N);
+    gauss_seidel2D(f_out, A, d, M, N);
   
   mxFree(r);
   mxFree(r_downsampled);
+  mxFree(A_downsampled);
   mxFree(v);
 }
 
 
 /* It is assumed that f_out is initialized to zero when called. */
-void
-poisson_full_multigrid2D(double *rhs, int number_of_iterations,
+static void
+poisson_full_multigrid2D(double *lhs, double *rhs, int number_of_iterations,
 			 int M, int N, double *f_out)
 {
+  double *lhs_downsampled;
   double *rhs_downsampled;
   double *f_coarse;
   int k;
@@ -670,15 +979,19 @@ poisson_full_multigrid2D(double *rhs, int number_of_iterations,
     int Nhalf = (N + 1) / 2;
     rhs_downsampled = mxCalloc(Mhalf * Nhalf, sizeof(*rhs_downsampled));
     downsample2D(rhs, M, N, rhs_downsampled, Mhalf, Nhalf);
+    lhs_downsampled = mxCalloc(9 * Mhalf * Nhalf, sizeof(*lhs_downsampled));
+    galerkin2D(lhs, M, N, lhs_downsampled, Mhalf, Nhalf);
     
     f_coarse = mxCalloc(Mhalf * Nhalf, sizeof(*f_coarse));
-    poisson_full_multigrid2D(rhs_downsampled, number_of_iterations,
+    poisson_full_multigrid2D(lhs_downsampled, rhs_downsampled,
+			     number_of_iterations,
 			     Mhalf, Nhalf, f_coarse);
     
     /* Upsample the coarse result. */
     upsample2D(rhs, M, N, f_coarse, Mhalf, Nhalf, f_out);
 
     mxFree(f_coarse);
+    mxFree(lhs_downsampled);
     mxFree(rhs_downsampled);
   }
   
@@ -686,7 +999,7 @@ poisson_full_multigrid2D(double *rhs, int number_of_iterations,
   for (k = 0; k < number_of_iterations; k++)
   {
     int directly_solved;
-    poisson_multigrid2D(f_out, rhs, 2, 2, 2, f_out, M, N,
+    poisson_multigrid2D(f_out, lhs, rhs, 2, 2, 2, f_out, M, N,
 			&directly_solved);
     if (directly_solved)
       break;
@@ -694,11 +1007,12 @@ poisson_full_multigrid2D(double *rhs, int number_of_iterations,
 }
 
 
-void
+static void
 antigradient2D(double *g, double mu, int number_of_iterations,
 	       int M, int N, double *f_out)
 {
   double *rhs;
+  double *lhs;
   double sum;
   double mean;
   int i, j;
@@ -730,11 +1044,29 @@ antigradient2D(double *g, double mu, int number_of_iterations,
       rhs[index1] = d;
     }
   
+  /* Compute left hand side. */
+  lhs = mxCalloc(9 * M * N, sizeof(*lhs));
+  for (j = 0; j < N; j++)
+    for (i = 0; i < M; i++)
+    {
+      int index = 9 * (j * M + i);
+
+      lhs[index] = -4;
+      if (i > 0)
+	lhs[index + 1] = 1 + (i == M-1);
+      if (i < M-1)
+	lhs[index + 2] = 1 + (i == 0);
+      if (j > 0)
+	lhs[index + 3] = 1 + (j == N-1);
+      if (j < N-1)
+	lhs[index + 4] = 1 + (j == 0);
+    }
+ 
   /* Solve the equation system with the full multigrid algorithm.
    * Use W cycles and 2 presmoothing and 2 postsmoothing
    * Gauss-Seidel iterations.
    */
-  poisson_full_multigrid2D(rhs, number_of_iterations, M, N, f_out);
+  poisson_full_multigrid2D(lhs, rhs, number_of_iterations, M, N, f_out);
   
   /* Fix the mean value. */
   sum = 0.0;
