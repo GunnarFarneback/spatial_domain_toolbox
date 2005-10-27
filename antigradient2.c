@@ -1,8 +1,3 @@
-#include "mex.h"
-#include <string.h>
-
-#define RECURSION_SIZE_LIMIT 8
-
 /*
  * ANTIGRADIENT
  * 
@@ -14,6 +9,32 @@
  *         gunnar@imt.liu.se
  */
 
+#include "mex.h"
+#include <string.h>
+
+#define RECURSION_SIZE_LIMIT 8
+
+/* This can without cost be overdimensioned. */
+#define MAX_LEVELS 30
+
+struct data
+{
+  mxArray *A_array;
+  double *lhs[MAX_LEVELS];
+};
+
+struct data data;
+
+static void
+clear_global_data()
+{
+  int k;
+  data.A_array = NULL;
+  for (k = 0; k < MAX_LEVELS; k++)
+    data.lhs[k] = NULL;
+}
+
+/*************** 2D ****************/
 
 static void
 logmatrix(double *M, int m, int n, char *name, char *logfunction)
@@ -33,69 +54,66 @@ logmatrix(double *M, int m, int n, char *name, char *logfunction)
   mexCallMATLAB(0, NULL, 2, input_arrays, logfunction);
 }
 
-/*************** 2D ****************/
 
 static void
-solve_directly2D(double *f, double *lhs, double *rhs, double *f_out,
-		 int M, int N)
+solve_directly2D(double *lhs, double *rhs, double *f_out, int M, int N)
 {
   int s = M * N;
   int dims[2];
-  mxArray *A_array;
   mxArray *b_array;
-  double *A;
   double *b;
-  int k;
   int i, j;
   mxArray *x_array;
   mxArray *input_arrays[2];
+
+  if (data.A_array == NULL)
+  {
+    double *A;
+    
+    dims[0] = s;
+    dims[1] = s;
+    data.A_array = mxCreateNumericArray(2, dims, mxDOUBLE_CLASS, mxREAL);
+    A = mxGetPr(data.A_array);
+  
+    for (j = 0; j < N; j++)
+      for (i = 0; i < M; i++)
+      {
+	int index = j*M+i;
+	A[index + s * index] = lhs[9 * index] + (lhs[9 * index] == 0.0);
+	if (i > 0)
+	  A[index + s * (index - 1)] = lhs[9 * index + 1];
+	if (i < M-1)
+	  A[index + s * (index + 1)] = lhs[9 * index + 2];
+	if (j > 0)
+	  A[index + s * (index - M)] = lhs[9 * index + 3];
+	if (j < N-1)
+	  A[index + s * (index + M)] = lhs[9 * index + 4];
+	if (i > 0 && j > 0)
+	  A[index + s * (index - M - 1)] = lhs[9 * index + 5];
+	if (i > 0 && j < N-1)
+	  A[index + s * (index + M - 1)] = lhs[9 * index + 6];
+	if (i < M-1 && j > 0)
+	  A[index + s * (index - M + 1)] = lhs[9 * index + 7];
+	if (i < M-1 && j < N-1)
+	  A[index + s * (index + M + 1)] = lhs[9 * index + 8];
+      }
+    
+    for (i = 0; i < s*s; i++)
+      A[i] += 1.0 / (s*s);
+  }
   
   dims[0] = s;
-  dims[1] = s;
-  A_array = mxCreateNumericArray(2, dims, mxDOUBLE_CLASS, mxREAL);
-  A = mxGetPr(A_array);
-  
   dims[1] = 1;
   b_array = mxCreateNumericArray(2, dims, mxDOUBLE_CLASS, mxREAL);
   b = mxGetPr(b_array);
-  
-  k = 0;
-  for (j = 0; j < N; j++)
-    for (i = 0; i < M; i++)
-    {
-      int index = j*M+i;
-      A[k + s * (j*M+i)] = lhs[9 * index] + (lhs[9 * index] == 0.0);
-      if (i > 0)
-	A[k + s * (j*M+i-1)] = lhs[9 * index + 1];
-      if (i < M-1)
-	A[k + s * (j*M+i+1)] = lhs[9 * index + 2];
-      if (j > 0)
-	A[k + s * ((j-1)*M+i)] = lhs[9 * index + 3];
-      if (j < N-1)
-	A[k + s * ((j+1)*M+i)] = lhs[9 * index + 4];
-      if (i > 0 && j > 0)
-	A[k + s * ((j-1)*M+i-1)] = lhs[9 * index + 5];
-      if (i > 0 && j < N-1)
-	A[k + s * ((j+1)*M+i-1)] = lhs[9 * index + 6];
-      if (i < M-1 && j > 0)
-	A[k + s * ((j-1)*M+i+1)] = lhs[9 * index + 7];
-      if (i < M-1 && j < N-1)
-	A[k + s * ((j+1)*M+i+1)] = lhs[9 * index + 8];
-      
-      b[k] = rhs[index];
-      
-      k++;
-    }
-  
-  for (i = 0; i < s*s; i++)
-    A[i] += 1.0 / (s*s);
-  
-  input_arrays[0] = A_array;
+
+  memcpy(b, rhs, M * N * sizeof(*rhs));
+    
+  input_arrays[0] = data.A_array;
   input_arrays[1] = b_array;
   mexCallMATLAB(1, &x_array, 2, input_arrays, "\\");
-  memcpy(f_out, mxGetPr(x_array), s * sizeof(*f));
+  memcpy(f_out, mxGetPr(x_array), s * sizeof(*f_out));
   mxDestroyArray(x_array);
-  mxDestroyArray(A_array);
   mxDestroyArray(b_array);
 }
 
@@ -301,12 +319,21 @@ downsample2D(double *rhs, int M, int N,
 
 
 static void
-galerkin2D(double *lhs, int M, int N,
-	   double *lhs_coarse, int Mhalf, int Nhalf,
+galerkin2D(int level, int M, int N, int Mhalf, int Nhalf,
 	   double *weight, double *coarse_weight)
 {
   int i, j;
+  double *lhs;
+  double *lhs_coarse;
 
+  if (data.lhs[level + 1] != NULL)
+    return;
+
+  data.lhs[level + 1] = mxCalloc(9 * Mhalf * Nhalf,
+				 sizeof(*data.lhs[level + 1]));
+  lhs = data.lhs[level];
+  lhs_coarse = data.lhs[level + 1];
+  
   for (j = 0; j < Nhalf; j++)
     for (i = 0; i < Mhalf; i++)
     {
@@ -882,7 +909,7 @@ upsample2D(double *rhs, int M, int N,
 
 /* Recursive multigrid function.*/
 static void
-poisson_multigrid2D(double *f, double *A, double *d, double *weight,
+poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
 		    int n1, int n2, int nm,
 		    double *f_out,
 		    int M, int N, int *directly_solved)
@@ -892,17 +919,17 @@ poisson_multigrid2D(double *f, double *A, double *d, double *weight,
   double *r;
   double *r_downsampled;
   double *coarse_weight;
-  double *A_downsampled;
+  double *lhs = data.lhs[level];
   double *v;
   int Mhalf;
   int Nhalf;
 
-//  logmatrix(d, M, N, "rhs", "foo");
+//  logmatrix(rhs, M, N, "rhs", "foo");
   
   /* Solve a sufficiently small problem directly. */
   if (M < RECURSION_SIZE_LIMIT || N < RECURSION_SIZE_LIMIT)
   {
-    solve_directly2D(f, A, d, f_out, M, N);
+    solve_directly2D(lhs, rhs, f_out, M, N);
     *directly_solved = 1;
     return;
   }
@@ -913,7 +940,7 @@ poisson_multigrid2D(double *f, double *A, double *d, double *weight,
   
   /* Pre-smoothing. */
   for (k = 0; k < n1; k++)
-    gauss_seidel2D(f_out, A, d, M, N);
+    gauss_seidel2D(f_out, lhs, rhs, M, N);
   
   /* Compute residual. */
   r = mxCalloc(M * N, sizeof(*r));
@@ -922,39 +949,39 @@ poisson_multigrid2D(double *f, double *A, double *d, double *weight,
     {
       int index = j * M + i;
       double residual = 0.0;
-      if (A[9 * index] != 0.0)
+      if (lhs[9 * index] != 0.0)
       {
-	residual = d[index] - A[9 * index] * f_out[index];
+	residual = rhs[index] - lhs[9 * index] * f_out[index];
 	if (i > 0)
-	  residual -= A[9 * index + 1] * f_out[index - 1];
+	  residual -= lhs[9 * index + 1] * f_out[index - 1];
 	
 	if (i < M-1)
-	  residual -= A[9 * index + 2] * f_out[index + 1];
+	  residual -= lhs[9 * index + 2] * f_out[index + 1];
 	
 	if (j > 0)
-	  residual -= A[9 * index + 3] * f_out[index - M];
+	  residual -= lhs[9 * index + 3] * f_out[index - M];
 	
 	if (j < N-1)
-	  residual -= A[9 * index + 4] * f_out[index + M];
+	  residual -= lhs[9 * index + 4] * f_out[index + M];
 	
 	if (i > 0 && j > 0)
-	  residual -= A[9 * index + 5] * f_out[index - 1 - M];
+	  residual -= lhs[9 * index + 5] * f_out[index - 1 - M];
 	
 	if (i > 0 && j < N-1)
-	  residual -= A[9 * index + 6] * f_out[index - 1 + M];
+	  residual -= lhs[9 * index + 6] * f_out[index - 1 + M];
 	
 	if (i < M-1 && j > 0)
-	  residual -= A[9 * index + 7] * f_out[index + 1 - M];
+	  residual -= lhs[9 * index + 7] * f_out[index + 1 - M];
 	
 	if (i < M-1 && j < N-1)
-	  residual -= A[9 * index + 8] * f_out[index + 1 + M];
+	  residual -= lhs[9 * index + 8] * f_out[index + 1 + M];
       }
       
       r[index] = residual;
     }
 
-//  logmatrix(A, 9, M*N, "A before residual", "foo");
-//  logmatrix(d, M, N, "d before residual", "foo");
+//  logmatrix(lhs, 9, M*N, "lhs before residual", "foo");
+//  logmatrix(rhs, M, N, "d before residual", "foo");
 //  logmatrix(f_out, M, N, "f_out before residual", "foo");
 //  logmatrix(r, M, N, "residual", "foo");
   
@@ -964,15 +991,14 @@ poisson_multigrid2D(double *f, double *A, double *d, double *weight,
   r_downsampled = mxCalloc(Mhalf * Nhalf, sizeof(*r_downsampled));
   coarse_weight = mxCalloc(Mhalf * Nhalf, sizeof(*coarse_weight));
   downsample2D(r, M, N, r_downsampled, Mhalf, Nhalf, weight, coarse_weight);
-  A_downsampled = mxCalloc(9 * Mhalf * Nhalf, sizeof(*A_downsampled));
-  galerkin2D(A, M, N, A_downsampled, Mhalf, Nhalf, weight, coarse_weight);
+  galerkin2D(level, M, N, Mhalf, Nhalf, weight, coarse_weight);
   
   /* Recurse to compute a correction. */
   v = mxCalloc(Mhalf * Nhalf, sizeof(*v));
   for (k = 0; k < nm; k++)
   {
     int directly_solved;
-    poisson_multigrid2D(v, A_downsampled, r_downsampled, coarse_weight,
+    poisson_multigrid2D(v, level + 1, r_downsampled, coarse_weight,
 			n1, n2, nm, v, Mhalf, Nhalf, &directly_solved);
     if (directly_solved)
       break;
@@ -982,7 +1008,7 @@ poisson_multigrid2D(double *f, double *A, double *d, double *weight,
   
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)
-    gauss_seidel2D(f_out, A, d, M, N);
+    gauss_seidel2D(f_out, lhs, rhs, M, N);
 
   /* Set the mean value to zero.
    *
@@ -1010,14 +1036,13 @@ poisson_multigrid2D(double *f, double *A, double *d, double *weight,
   mxFree(r);
   mxFree(r_downsampled);
   mxFree(coarse_weight);
-  mxFree(A_downsampled);
   mxFree(v);
 }
 
 
 /* It is assumed that f_out is initialized to zero when called. */
 static void
-poisson_full_multigrid2D(double *lhs, double *rhs, double *weight,
+poisson_full_multigrid2D(int level, double *rhs, double *weight,
 			 int number_of_iterations, int M, int N, double *f_out)
 {
   double *lhs_downsampled;
@@ -1038,14 +1063,12 @@ poisson_full_multigrid2D(double *lhs, double *rhs, double *weight,
     coarse_weight = mxCalloc(Mhalf * Nhalf, sizeof(*coarse_weight));
     downsample2D(rhs, M, N, rhs_downsampled, Mhalf, Nhalf,
 		 weight, coarse_weight);
-    lhs_downsampled = mxCalloc(9 * Mhalf * Nhalf, sizeof(*lhs_downsampled));
-    galerkin2D(lhs, M, N, lhs_downsampled, Mhalf, Nhalf,
-	       weight, coarse_weight);
+    galerkin2D(level, M, N, Mhalf, Nhalf, weight, coarse_weight);
 //    logmatrix(rhs_downsampled, Mhalf, Nhalf, "rhs_downsampled", "foo");
-    logmatrix(lhs_downsampled, 9, Mhalf * Nhalf, "lhs_downsampled", "foo");
+    logmatrix(data.lhs[level + 1], 9, Mhalf * Nhalf, "lhs_downsampled", "foo");
     
     f_coarse = mxCalloc(Mhalf * Nhalf, sizeof(*f_coarse));
-    poisson_full_multigrid2D(lhs_downsampled, rhs_downsampled, coarse_weight,
+    poisson_full_multigrid2D(level + 1, rhs_downsampled, coarse_weight,
 			     number_of_iterations,
 			     Mhalf, Nhalf, f_coarse);
 //    logmatrix(f_coarse, Mhalf, Nhalf, "f_coarse", "foo");
@@ -1056,7 +1079,6 @@ poisson_full_multigrid2D(double *lhs, double *rhs, double *weight,
 //    logmatrix(f_out, M, N, "f_fine", "foo");
 
     mxFree(f_coarse);
-    mxFree(lhs_downsampled);
     mxFree(coarse_weight);
     mxFree(rhs_downsampled);
   }
@@ -1065,7 +1087,7 @@ poisson_full_multigrid2D(double *lhs, double *rhs, double *weight,
   for (k = 0; k < number_of_iterations; k++)
   {
     int directly_solved;
-    poisson_multigrid2D(f_out, lhs, rhs, weight, 2, 2, 2, f_out, M, N,
+    poisson_multigrid2D(f_out, level, rhs, weight, 2, 2, 2, f_out, M, N,
 			&directly_solved);
     if (directly_solved)
       break;
@@ -1084,13 +1106,16 @@ antigradient2D(double *g, double *mask, double mu, int number_of_iterations,
   double mean;
   int i, j;
   int num_samples_in_mask;
-  
+
+  clear_global_data();
+
   /* Compute left and right hand sides of Poisson problem with Neumann
    * boundary conditions, discretized by finite differences.
    */
   rhs = mxCalloc(M * N, sizeof(*rhs));
   lhs = mxCalloc(9 * M * N, sizeof(*lhs));
-  weight = mxCalloc(M * N, sizeof(*lhs));
+  data.lhs[0] = lhs;
+  weight = mxCalloc(M * N, sizeof(*weight));
   for (j = 0; j < N; j++)
     for (i = 0; i < M; i++)
     {
@@ -1152,7 +1177,7 @@ antigradient2D(double *g, double *mask, double mu, int number_of_iterations,
    * Use W cycles and 2 presmoothing and 2 postsmoothing
    * Gauss-Seidel iterations.
    */
-  poisson_full_multigrid2D(lhs, rhs, weight,
+  poisson_full_multigrid2D(0, rhs, weight,
 			   number_of_iterations, M, N, f_out);
   
   /* Fix the mean value. */
