@@ -155,11 +155,14 @@ gauss_seidel2D(double *f, double *A, double *d, int M, int N)
 
 static void
 downsample2D(double *rhs, int M, int N,
-	     double *rhs_coarse, int Mhalf, int Nhalf)
+	     double *rhs_coarse, int Mhalf, int Nhalf,
+	     double *lhs, double *coarse_weight)
 {
   int i, j;
   int index1;
   int index2;
+  double c, n, s, w, e, nw, ne, sw, se;
+  double sum;
   
   if (M % 2 == 0 && N % 2 == 0)
   {
@@ -168,176 +171,130 @@ downsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
+
+	nw = (lhs[9 * index2] != 0);
+	ne = (lhs[9 * (index2 + M)] != 0);
+	sw = (lhs[9 * (index2 + 1)] != 0);
+	se = (lhs[9 * (index2 + M + 1)] != 0);
+	sum = nw + ne + sw + se;
+	coarse_weight[index1] = sum;
+	sum += (sum == 0);
 	
-	rhs_coarse[index1] = (rhs[index2]
-			      + rhs[index2 + M]
-			      + rhs[index2 + 1]
-			      + rhs[index2 + M + 1]);
+	rhs_coarse[index1] = 4 / sum * (nw * rhs[index2]
+					+ ne * rhs[index2 + M]
+					+ sw * rhs[index2 + 1]
+					+ se * rhs[index2 + M + 1]);
       }
   }
   
   if (M % 2 == 1 && N % 2 == 0)
   {
     for (j = 0; j < Nhalf; j++)
-    {
-      index1 = (j * Mhalf);
-      index2 = (2 * j * M);
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 + M]
-			    + rhs[index2 + 1]
-			    + rhs[index2 + M + 1]);
-      for (i = 1; i < Mhalf - 1; i++)
+      for (i = 0; i < Mhalf; i++)
       {
-	index1++;
-	index2 += 2;
-	rhs_coarse[index1] = (rhs[index2]
-			      + rhs[index2 + M]
-			      + 0.5 * (rhs[index2 - 1]
-				       + rhs[index2 + 1]
-				       + rhs[index2 + M - 1]
-				       + rhs[index2 + M + 1]));
+	double result;
+	index1 = (j * Mhalf + i);
+	index2 = (2 * j * M + 2 * i);
+	
+	nw = 0.5 * (i > 0 && lhs[9 * (index2 - 1)] != 0);
+	ne = 0.5 * (i > 0 && lhs[9 * (index2 + M - 1)] != 0);
+	w  = (lhs[9 * index2] != 0);
+	e  = (lhs[9 * (index2 + M)] != 0);
+	sw = 0.5 * (i < Mhalf - 1 && lhs[9 * (index2 + 1)] != 0);
+	se = 0.5 * (i < Mhalf - 1 && lhs[9 * (index2 + M + 1)] != 0);
+	sum = nw + ne + w + e + sw + se;
+	coarse_weight[index1] = sum;
+	sum += (sum == 0);
+	
+	result = w * rhs[index2] + e * rhs[index2 + M];
+	if (i > 0)
+	  result += nw * rhs[index2 - 1] + ne * rhs[index2 + M - 1];
+	if (i < Mhalf - 1)
+	  result += sw * rhs[index2 + 1] + se * rhs[index2 + M + 1];
+    
+	rhs_coarse[index1] = 4 / sum * result;
       }
-      index1++;
-      index2 += 2;
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 + M]
-			    + rhs[index2 - 1]
-			    + rhs[index2 + M - 1]);
-    }
   }
   
   if (M % 2 == 0 && N % 2 == 1)
   {
-    for (i = 0; i < Mhalf; i++)
-    {
-      index1 = i;
-      index2 = 2 * i;
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 + 1]
-			    + rhs[index2 + M]
-			    + rhs[index2 + M + 1]);
-    }
-    
-    for (j = 1; j < Nhalf - 1; j++)
-    {
+    for (j = 0; j < Nhalf; j++)
       for (i = 0; i < Mhalf; i++)
       {
+	double result;
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	rhs_coarse[index1] = (rhs[index2]
-			      + rhs[index2 + 1]
-			      + 0.5 * (rhs[index2 - M]
-				       + rhs[index2 + M]
-				       + rhs[index2 - M + 1]
-				       + rhs[index2 + M + 1]));
-      }
-    }
+	
+	nw = 0.5 * (j > 0 && lhs[9 * (index2 - M)] != 0);
+	sw = 0.5 * (j > 0 && lhs[9 * (index2 - M + 1)] != 0);
+	n  = (lhs[9 * index2] != 0);
+	s  = (lhs[9 * (index2 + 1)] != 0);
+	ne = 0.5 * (j < Nhalf - 1 && lhs[9 * (index2 + M)] != 0);
+	se = 0.5 * (j < Nhalf - 1 && lhs[9 * (index2 + M + 1)] != 0);
+	sum = nw + sw + n + s + ne + se;
+	coarse_weight[index1] = sum;
+	sum += (sum == 0);
+	
+	result = n * rhs[index2] + s * rhs[index2 + 1];
+	if (j > 0)
+	  result += nw * rhs[index2 - M] + sw * rhs[index2 - M + 1];
+	if (j < Nhalf - 1)
+	  result += ne * rhs[index2 + M] + se * rhs[index2 + M + 1];
     
-    for (i = 0; i < Mhalf; i++)
-    {
-      index1 = (j * Mhalf + i);
-      index2 = (2 * j * M + 2 * i);
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 + 1]
-			    + rhs[index2 - M]
-			    + rhs[index2 - M + 1]);
-    }
+	rhs_coarse[index1] = 4 / sum * result;
+      }
   }
   
   if (M % 2 == 1 && N % 2 == 1)
   {
-    for (j = 1; j < Nhalf - 1; j++)
-    {
-      for (i = 1; i < Mhalf - 1; i++)
+    for (j = 0; j < Nhalf; j++)
+      for (i = 0; i < Mhalf; i++)
       {
+	double result;
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	rhs_coarse[index1] = (rhs[index2]
-			      + 0.5 * (rhs[index2 - 1]
-				       + rhs[index2 + 1]
-				       + rhs[index2 - M]
-				       + rhs[index2 + M])
-			      + 0.25* (rhs[index2 - M - 1]
-				       + rhs[index2 - M + 1]
-				       + rhs[index2 + M - 1]
-				       + rhs[index2 + M + 1]));
+	
+	c  = (lhs[9 * index2] != 0);
+	n  = 0.5 * (i > 0 && lhs[9 * (index2 - 1)] != 0);
+	s  = 0.5 * (i < Mhalf - 1 && lhs[9 * (index2 + 1)] != 0);
+	w  = 0.5 * (j > 0 && lhs[9 * (index2 - M)] != 0);
+	e  = 0.5 * (j < Nhalf - 1 && lhs[9 * (index2 + M)] != 0);
+	nw = 0.25 * (i > 0 && j > 0 && lhs[9 * (index2 - M - 1)] != 0);
+	ne = 0.25 * (i > 0 && j < Nhalf - 1 && lhs[9 * (index2 + M - 1)] != 0);
+	sw = 0.25 * (i < Mhalf - 1 && j > 0 && lhs[9 * (index2 - M + 1)] != 0);
+	se = 0.25 * (i < Mhalf - 1 && j < Nhalf - 1 && lhs[9 * (index2 + M + 1)] != 0);
+	sum = c + n + s + w + e + nw + ne + sw + se;
+	coarse_weight[index1] = sum;
+	sum += (sum == 0);
+	
+	result = c * rhs[index2];
+	if (n > 0)
+	  result += n * rhs[index2 - 1];
+	if (s > 0)
+	  result += s * rhs[index2 + 1];
+	if (w > 0)
+	  result += w * rhs[index2 - M];
+	if (e > 0)
+	  result += e * rhs[index2 + M];
+	if (nw > 0)
+	  result += nw * rhs[index2 - M - 1];
+	if (ne > 0)
+	  result += ne * rhs[index2 + M - 1];
+	if (sw > 0)
+	  result += sw * rhs[index2 - M + 1];
+	if (se > 0)
+	  result += se * rhs[index2 + M + 1];
+	
+	rhs_coarse[index1] = 4 / sum * result;
       }
-    }
-    
-    for (i = 1; i < Mhalf - 1; i++)
-    {
-      index1 = i;
-      index2 = 2 * i;
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 + M]
-			    + 0.5 * (rhs[index2 - 1]
-				     + rhs[index2 + 1]
-				     + rhs[index2 + M - 1]
-				     + rhs[index2 + M + 1]));
-      index1 = ((Nhalf - 1) * Mhalf + i);
-      index2 = (2 * (Nhalf - 1) * M + 2 * i);
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 - M]
-			    + 0.5 * (rhs[index2 - 1]
-				     + rhs[index2 + 1]
-				     + rhs[index2 - M - 1]
-				     + rhs[index2 - M + 1]));
-    }
-    
-    for (j = 1; j < Nhalf - 1; j++)
-    {
-      index1 = (j * Mhalf);
-      index2 = (2 * j * M);
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 + 1]
-			    + 0.5 * (rhs[index2 - M]
-				     + rhs[index2 + M]
-				     + rhs[index2 - M + 1]
-				     + rhs[index2 + M + 1]));
-      index1 = (j * Mhalf + Mhalf - 1);
-      index2 = (2 * j * M + 2 * (Mhalf - 1));
-      rhs_coarse[index1] = (rhs[index2]
-			    + rhs[index2 - 1]
-			    + 0.5 * (rhs[index2 - M]
-				     + rhs[index2 + M]
-				     + rhs[index2 - M - 1]
-				     + rhs[index2 + M - 1]));
-    }
-    
-    index1 = 0;
-    index2 = 0;
-    rhs_coarse[index1] = (rhs[index2]
-			  + rhs[index2 + 1]
-			  + rhs[index2 + M]
-			  + rhs[index2 + M + 1]);
-    
-    index1 = (Nhalf - 1) * Mhalf;
-    index2 = 2 * (Nhalf - 1) * M;
-    rhs_coarse[index1] = (rhs[index2]
-			  + rhs[index2 + 1]
-			  + rhs[index2 - M]
-			  + rhs[index2 - M + 1]);
-    
-    index1 = (Mhalf - 1);
-    index2 = (2 * (Mhalf - 1));
-    rhs_coarse[index1] = (rhs[index2]
-			  + rhs[index2 - 1]
-			  + rhs[index2 + M]
-			  + rhs[index2 + M - 1]);
-    
-    index1 = ((Nhalf - 1) * Mhalf + Mhalf - 1);
-    index2 = (2 * (Nhalf - 1) * M + 2 * (Mhalf - 1));
-    rhs_coarse[index1] = (rhs[index2]
-			  + rhs[index2 - 1]
-			  + rhs[index2 - M]
-			  + rhs[index2 - M - 1]);
   }
 }
 
 
 static void
 galerkin2D(double *lhs, int M, int N,
-	   double *lhs_coarse, int Mhalf, int Nhalf)
+	   double *lhs_coarse, int Mhalf, int Nhalf,
+	   double *coarse_weight)
 {
   int i, j;
 
@@ -349,6 +306,7 @@ galerkin2D(double *lhs, int M, int N,
       double stencil1[3][3];
       double stencil2[5][5];
       double stencil3[3][3];
+      double mask1[3][3];
       double mask2[5][5]; /* Can be int. */
       double mask3[3][3];
       double mask3sum;
@@ -367,6 +325,16 @@ galerkin2D(double *lhs, int M, int N,
 	  }
 	}
 
+      mask1[1][1] = (coarse_weight[index1] > 0);
+      mask1[0][1] = (i > 0 && coarse_weight[index1 - 1] > 0);
+      mask1[2][1] = (i < Mhalf - 1 && coarse_weight[index1 + 1] > 0);
+      mask1[1][0] = (j > 0 && coarse_weight[index1 - Mhalf] > 0);
+      mask1[1][2] = (j < Nhalf - 1 && coarse_weight[index1 + Mhalf] > 0);
+      mask1[0][0] = (i > 0 && j > 0 && coarse_weight[index1 - Mhalf - 1] > 0);
+      mask1[0][2] = (i > 0 && j < Nhalf - 1 && coarse_weight[index1 + Mhalf - 1] > 0);
+      mask1[2][0] = (i < Mhalf - 1 && j > 0 && coarse_weight[index1 - Mhalf + 1] > 0);
+      mask1[2][2] = (i < Mhalf - 1 && j < Nhalf - 1 && coarse_weight[index1 + Mhalf + 1] > 0);
+      
       if (M % 2 == 0 && N % 2 == 0)
       {
 	double nw = 0;
@@ -384,6 +352,7 @@ galerkin2D(double *lhs, int M, int N,
 	if (lhs[9 * (index2 + M + 1)] != 0)
 	  se = 1;
 
+	/* FIXME: If mean is 0 here we can short-circuit. */
 	mean = (nw + sw + ne + se) / 4;
 	if (mean == 0)
 	  mean = 1;
@@ -535,16 +504,6 @@ galerkin2D(double *lhs, int M, int N,
 	stencil1[2][2] = se / mean;
       }
 
-#if 0
-      mexPrintf("i=%d j=%d stencil1:\n", i, j);
-      for (u = 0; u < 3; u++) {
-	for (v = 0; v < 3; v++)
-	  mexPrintf("%f ", stencil1[u][v]);
-	mexPrintf("\n");
-      }
-      mexPrintf("\n");
-#endif
-      
       for (u = 0; u < 3; u++)
 	for (v = 0; v < 3; v++)
 	{
@@ -584,48 +543,44 @@ galerkin2D(double *lhs, int M, int N,
 	  }
 	}
 
-#if 0
-      mexPrintf("i=%d j=%d stencil2:\n", i, j);
-      for (u = 0; u < 5; u++) {
-	for (v = 0; v < 5; v++)
-	  mexPrintf("%f ", stencil2[u][v]);
-	mexPrintf("\n");
-      }
-      mexPrintf("\n");
-#endif
-      
       if (M % 2 == 0 && N % 2 == 0)
       {
 	for (u = 1; u < 5; u++)
 	  for (v = 1; v < 5; v++)
 	  {
 	    double alpha1, alpha2;
-	    if (i == 0 && u < 3)
-	      alpha1 = 0;
-	    else if (i == Mhalf - 1 && u >= 3)
-	      alpha1 = 1;
-	    else if (u % 2 == 1)
+	    double nw, ne, sw, se;
+	    int uu, vv;
+	    double sum;
+	    
+	    if (u % 2 == 0)
 	      alpha1 = 0.75;
 	    else
 	      alpha1 = 0.25;
 
-	    if (j == 0 && v < 3)
-	      alpha2 = 0;
-	    else if (j == Nhalf - 1 && v >= 3)
-	      alpha2 = 1;
-	    else if (v % 2 == 1)
+	    if (v % 2 == 0)
 	      alpha2 = 0.75;
 	    else
 	      alpha2 = 0.25;
 
-	    stencil3[(u-1)/2  ][(v-1)/2  ] += alpha1 * alpha2 * stencil2[u][v];
-	    stencil3[(u-1)/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
-	    stencil3[(u-1)/2+1][(v-1)/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
-	    stencil3[(u-1)/2+1][(v-1)/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
-	    mask3[(u-1)/2  ][(v-1)/2  ] += alpha1 * alpha2 * mask2[u][v];
-	    mask3[(u-1)/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
-	    mask3[(u-1)/2+1][(v-1)/2  ] += (1-alpha1) * alpha2 * mask2[u][v];
-	    mask3[(u-1)/2+1][(v-1)/2+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
+	    uu = (u-1)/2;
+	    vv = (v-1)/2;
+	    nw = (1 - alpha1) * (1 - alpha2) * mask1[uu  ][vv  ];
+	    ne = (1 - alpha1) *      alpha2  * mask1[uu  ][vv+1];
+	    sw =      alpha1  * (1 - alpha2) * mask1[uu+1][vv  ];
+	    se =      alpha1  *      alpha2  * mask1[uu+1][vv+1];
+
+	    sum = nw + ne + sw + se;
+	    sum += (sum == 0);
+	    
+	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	    stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	    stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	    stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	    mask3[uu  ][vv  ] += alpha1 * alpha2 * mask2[u][v];
+	    mask3[uu  ][vv+1] += alpha1 * (1-alpha2) * mask2[u][v];
+	    mask3[uu+1][vv  ] += (1-alpha1) * alpha2 * mask2[u][v];
+	    mask3[uu+1][vv+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
 	  }
       }
 
@@ -635,27 +590,43 @@ galerkin2D(double *lhs, int M, int N,
 	  for (v = 1; v < 5; v++)
 	  {
 	    double alpha1, alpha2;
+	    double nw, ne, sw, se;
+	    int uu, vv;
+	    double sum;
 	    if (u % 2 == 0)
-	      alpha1 = 1;
+	      alpha1 = 0;
 	    else
 	      alpha1 = 0.5;
 	    
-	    if (j == 0 && v < 3)
-	      alpha2 = 0;
-	    else if (j == Nhalf - 1 && v >= 3)
-	      alpha2 = 1;
-	    else if (v % 2 == 1)
+	    if (v % 2 == 0)
 	      alpha2 = 0.75;
 	    else
 	      alpha2 = 0.25;
-
-	    stencil3[u/2  ][(v-1)/2  ] += alpha1 * alpha2 * stencil2[u][v];
-	    stencil3[u/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
-	    if (u < 4)
+	    
+	    uu = u/2;
+	    vv = (v-1)/2;
+	    nw = (1 - alpha1) * (1 - alpha2) * mask1[uu  ][vv  ];
+	    ne = (1 - alpha1) *      alpha2  * mask1[uu  ][vv+1];
+	    sw = 0;
+	    se = 0;
+	    if (alpha1 > 0)
 	    {
-	      stencil3[u/2+1][(v-1)/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
-	      stencil3[u/2+1][(v-1)/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	      sw = alpha1  * (1 - alpha2) * mask1[uu+1][vv  ];
+	      se = alpha1  *      alpha2  * mask1[uu+1][vv+1];
 	    }
+
+	    sum = nw + ne + sw + se;
+	    sum += (sum == 0);
+	    
+	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	    stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	    if (alpha1 > 0)
+	    {
+	      stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	    }
+
+	    
 	    mask3[u/2  ][(v-1)/2  ] += alpha1 * alpha2 * mask2[u][v];
 	    mask3[u/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
 	    if (u < 4)
@@ -672,26 +643,42 @@ galerkin2D(double *lhs, int M, int N,
 	  for (v = 0; v < 5; v++)
 	  {
 	    double alpha1, alpha2;
-	    if (i == 0 && u < 3)
-	      alpha1 = 0;
-	    else if (i == Mhalf - 1 && u >= 3)
-	      alpha1 = 1;
-	    else if (u % 2 == 1)
+	    double nw, ne, sw, se;
+	    int uu, vv;
+	    double sum;
+	    if (u % 2 == 0)
 	      alpha1 = 0.75;
 	    else
 	      alpha1 = 0.25;
-
+	    
 	    if (v % 2 == 0)
-	      alpha2 = 1;
+	      alpha2 = 0;
 	    else
 	      alpha2 = 0.5;
-	
-	    stencil3[(u-1)/2  ][v/2  ] += alpha1 * alpha2 * stencil2[u][v];
-	    if (v < 4)
-	      stencil3[(u-1)/2  ][v/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
-	    stencil3[(u-1)/2+1][v/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
-	    if (v < 4)
-	      stencil3[(u-1)/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	    
+	    uu = (u-1)/2;
+	    vv = v/2;
+	    nw = (1 - alpha1) * (1 - alpha2) * mask1[uu  ][vv  ];
+	    sw =      alpha1  * (1 - alpha2) * mask1[uu+1][vv  ];
+	    ne = 0;
+	    se = 0;
+	    if (alpha2 > 0)
+	    {
+	      ne = (1 - alpha1) * alpha2 * mask1[uu  ][vv+1];
+	      se =      alpha1  * alpha2 * mask1[uu+1][vv+1];
+	    }
+
+	    sum = nw + ne + sw + se;
+	    sum += (sum == 0);
+	    
+	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	    stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	    if (alpha2 > 0)
+	    {
+	      stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	    }
+	    
 	    mask3[(u-1)/2  ][v/2  ] += alpha1 * alpha2 * mask2[u][v];
 	    if (v < 4)
 	      mask3[(u-1)/2  ][v/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
@@ -707,23 +694,44 @@ galerkin2D(double *lhs, int M, int N,
 	  for (v = 0; v < 5; v++)
 	  {
 	    double alpha1, alpha2;
+	    double nw, ne, sw, se;
+	    int uu, vv;
+	    double sum;
 	    if (u % 2 == 0)
-	      alpha1 = 1;
+	      alpha1 = 0;
 	    else
 	      alpha1 = 0.5;
 	    
 	    if (v % 2 == 0)
-	      alpha2 = 1;
+	      alpha2 = 0;
 	    else
 	      alpha2 = 0.5;
 
-	    stencil3[u/2  ][v/2  ] += alpha1 * alpha2 * stencil2[u][v];
-	    if (v < 4)
-	      stencil3[u/2  ][v/2+1] += alpha1 * (1-alpha2) * stencil2[u][v];
-	    if (u < 4)
-	      stencil3[u/2+1][v/2  ] += (1-alpha1) * alpha2 * stencil2[u][v];
-	    if (u < 4 && v < 4)
-	      stencil3[u/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * stencil2[u][v];
+	    uu = u/2;
+	    vv = v/2;
+	    nw = (1 - alpha1) * (1 - alpha2) * mask1[uu  ][vv  ];
+	    sw = 0;
+	    if (alpha1 > 0)
+	      sw =      alpha1  * (1 - alpha2) * mask1[uu+1][vv  ];
+	    ne = 0;
+	    if (alpha2 > 0)
+	      ne = (1 - alpha1) * alpha2 * mask1[uu  ][vv+1];
+	    se = 0;
+	    if (alpha1 > 0 && alpha2 > 0)
+	      se =      alpha1  * alpha2 * mask1[uu+1][vv+1];
+
+	    sum = nw + ne + sw + se;
+	    sum += (sum == 0);
+	    
+	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	    if (alpha1 > 0)
+	      stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	    if (alpha2 > 0)
+	      stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	    if (alpha1 > 0 && alpha2 > 0)
+	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+
+	    
 	    mask3[u/2  ][v/2  ] += alpha1 * alpha2 * mask2[u][v];
 	    if (v < 4)
 	      mask3[u/2  ][v/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
@@ -733,16 +741,6 @@ galerkin2D(double *lhs, int M, int N,
 	      mask3[u/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
 	  }
       }
-
-#if 0
-      mexPrintf("i=%d j=%d stencil3:\n", i, j);
-      for (u = 0; u < 3; u++) {
-	for (v = 0; v < 3; v++)
-	  mexPrintf("%f ", stencil3[u][v]);
-	mexPrintf("\n");
-      }
-      mexPrintf("\n");
-#endif
 
       mask3sum = 0;
       for (u = 0; u < 3; u++)
@@ -764,17 +762,30 @@ galerkin2D(double *lhs, int M, int N,
       lhs_coarse[9 * index1 + 7] = 16 * stencil3[2][0] / mask3sum;
       lhs_coarse[9 * index1 + 8] = 16 * stencil3[2][2] / mask3sum;
 
-      if (i == 25 && j == 10)
+      for (u = 1; u < 9; u++)
+	if (lhs_coarse[9 * index1 + u] < 0)
+	{
+	  lhs_coarse[9 * index1] += lhs_coarse[9 * index1 + u];
+	  lhs_coarse[9 * index1 + u] = 0;
+	}
+      
+#if 0
+      if (i == 3 && j == 11)
       {
 	logmatrix((double *)stencil1, 3, 3, "stencil1", "foo");
 	logmatrix((double *)stencil2, 5, 5, "stencil2", "foo");
 	logmatrix((double *)stencil3, 3, 3, "stencil3", "foo");
+	logmatrix((double *)mask1, 3, 3, "mask1", "foo");
 	logmatrix((double *)mask2, 5, 5, "mask2", "foo");
 	logmatrix((double *)mask3, 3, 3, "mask3", "foo");
       }
+#endif
     }
+#if 0
   logmatrix(lhs, 9, M*N, "Afine", "foo");
   logmatrix(lhs_coarse, 9, Mhalf*Nhalf, "Acoarse", "foo");
+  logmatrix(coarse_weight, Mhalf, Nhalf, "coarse_weight", "foo");
+#endif
 }
 
 
@@ -782,7 +793,7 @@ galerkin2D(double *lhs, int M, int N,
 static void
 upsample2D(double *rhs, int M, int N,
 	   double *v, int Mhalf, int Nhalf,
-	   double *f_out)
+	   double *f_out, double *coarse_weight)
 {
   int i, j;
   int index1, index2;
@@ -791,253 +802,193 @@ upsample2D(double *rhs, int M, int N,
   
   if (M % 2 == 0 && N % 2 == 0)
   {
-    for (j = 0; j < Nhalf; j++)
-      for (i = 0; i < Mhalf; i++)
+    for (j = 0; j < N; j++)
+      for (i = 0; i < M; i++)
       {
-	index1 = (j * Mhalf + i);
-	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	no = v[index1 - 1];
-	so = v[index1 + 1];
-	we = v[index1 - Mhalf];
-	ea = v[index1 + Mhalf];
-	nw = v[index1 - Mhalf - 1];
-	sw = v[index1 - Mhalf + 1];
-	ne = v[index1 + Mhalf - 1];
-	se = v[index1 + Mhalf + 1];
-	CE = index2;
-	SO = index2 + 1;
-	EA = index2 + M;
-	SE = index2 + M + 1;
+	double alpha1, alpha2;
+	double nw, ne, sw, se;
+	int uu, vv;
+	double sum;
 	
-	/* Fine pixels northwest of coarse pixel center. */
-	if (i == 0)
-	{
-	  if (j == 0) /* NW corner. */
-	    f_out[CE] += ce - 0.25 * rhs[CE];
-	  else        /* North edge. */
-	    f_out[CE] += 0.75 * ce + 0.25 * (we - rhs[CE]);
-	}
+	index1 = j * M + i;
+	index2 = ((j - 1) / 2) * Mhalf + (i - 1) / 2;
+
+	if (i % 2 == 0)
+	  alpha1 = 0.75;
 	else
-	{
-	  if (j == 0) /* West edge. */
-	    f_out[CE] += 0.75 * ce + 0.25 * (no - rhs[CE]);
-	  else        /* Inner point. */
-	    f_out[CE] += (0.5625 * ce + 0.1875 * (no + we) + 0.0625 * nw);
-	}
+	  alpha1 = 0.25;
 	
-	/* Fine pixels southwest of coarse pixel center. */
-	if (i == Mhalf - 1)
-	{
-	  if (j == 0) /* SW corner. */
-	    f_out[SO] += ce - 0.25 * rhs[SO];
-	  else        /* South edge. */
-	    f_out[SO] += 0.75 * ce  + 0.25 * (we - rhs[SO]);
-	}
+	if (j % 2 == 0)
+	  alpha2 = 0.75;
 	else
-	{
-	  if (j == 0) /* West edge. */
-	    f_out[SO] += 0.75 * ce + 0.25 * (so - rhs[SO]);
-	  else        /* Inner point. */
-	    f_out[SO] += 0.5625 * ce + 0.1875 * (so + we) + 0.0625 * sw;
-	}
+	  alpha2 = 0.25;
 	
-	/* Fine pixels northeast of coarse pixel center. */
-	if (i == 0)
-	{
-	  if (j == Nhalf - 1) /* NE corner. */
-	    f_out[EA] += ce - 0.25 * rhs[EA];
-	  else              /* North edge. */
-	    f_out[EA] += 0.75 * ce + 0.25 * (ea - rhs[EA]);
-	}
-	else
-	{
-	  if (j == Nhalf - 1) /* East edge. */
-	    f_out[EA] += 0.75 * ce + 0.25 * (no - rhs[EA]);
-	  else              /* Inner point. */
-	    f_out[EA] += 0.5625 * ce + 0.1875 * (no + ea) + 0.0625 * ne;
-	}
+	nw = (1 - alpha1) * (1 - alpha2) * (i > 0 && j > 0 && coarse_weight[index2] > 0);
+	ne = (1 - alpha1) *      alpha2  * (i > 0 && j < Nhalf - 1 && coarse_weight[index2 + Mhalf] > 0);
+	sw =      alpha1  * (1 - alpha2) * (i < Mhalf - 1 && j > 0 && coarse_weight[index2 + 1] > 0);
+	se =      alpha1  *      alpha2  * (i < Mhalf - 1 && j < Nhalf - 1 && coarse_weight[index2 + Mhalf + 1] > 0);
 	
-	/* Fine pixels southeast of coarse pixel center. */
-	if (i == Mhalf - 1)
+	sum = nw + ne + sw + se;
+
+	if (sum > 0)
 	{
-	  if (j == Nhalf - 1) /* SE corner. */
-	    f_out[SE] += ce - 0.25 * rhs[SE];
-	  else              /* South edge.*/
-	    f_out[SE] += 0.75 * ce + 0.25 * (ea - rhs[SE]);
-	}
-	else
-	{
-	  if (j == Nhalf - 1) /* East edge. */
-	    f_out[SE] += 0.75 * ce + 0.25 * (so - rhs[SE]);
-	  else              /* Inner point. */
-	    f_out[SE] += 0.5625 * ce + 0.1875 * (so + ea) + 0.0625 * se;
+	  double contribution = 0;
+	  
+	  if (nw > 0)
+	    contribution += nw * v[index2];
+	  if (ne > 0)
+	    contribution += ne * v[index2 + Mhalf];
+	  if (sw > 0)
+	    contribution += sw * v[index2 + 1];
+	  if (se > 0)
+	    contribution += se * v[index2 + Mhalf + 1];
+	  
+	  f_out[index1] += contribution / sum;
 	}
       }
   }
-  
+    
   if (M % 2 == 1 && N % 2 == 0)
   {
-    for (j = 0; j < Nhalf; j++)
-      for (i = 0; i < Mhalf; i++)
+    for (j = 0; j < N; j++)
+      for (i = 0; i < M; i++)
       {
-	index1 = (j * Mhalf + i);
-	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	so = v[index1 + 1];
-	we = v[index1 - Mhalf];
-	ea = v[index1 + Mhalf];
-	sw = v[index1 - Mhalf + 1];
-	se = v[index1 + Mhalf + 1];
-	CE = index2;
-	SO = index2 + 1;
-	EA = index2 + M;
-	SE = index2 + M + 1;
-	NO = index2 - 1;
-	NE = index2 + M - 1;
+	double alpha1, alpha2;
+	double nw, ne, sw, se;
+	int uu, vv;
+	double sum;
 	
-	/* Fine pixels west of coarse pixel center. */
-	if (j == 0) /* West edge. */
-	{
-	  if (i == 0) /* NW corner */
-	    f_out[CE] += ce - 0.125 * (rhs[SO] + rhs[CE] - rhs[EA]);
-	  else if (i == Mhalf - 1) /* SW corner */
-	    f_out[CE] += ce - 0.125 * (rhs[NO] + rhs[CE] - rhs[EA]);
-	  else
-	    f_out[CE] += ce - 0.25 * rhs[CE];
-	}
-	else        /* Inner point. */
-	  f_out[CE] += 0.75 * ce + 0.25 * we;
+	index1 = j * M + i;
+	index2 = ((j - 1) / 2) * Mhalf + i / 2;
+
+	if (i % 2 == 0)
+	  alpha1 = 0.0;
+	else
+	  alpha1 = 0.5;
 	
-	/* Fine pixels southsouthwest of coarse pixel center. */
-	if (i < Mhalf - 1)
-	{
-	  if (j == 0) /* West edge. */
-	    f_out[SO] += 0.5 * (ce + so) - 0.25 * rhs[SO];
-	  else        /* Inner point. */
-	    f_out[SO] += 0.375 * (ce + so) + 0.125 * (we + sw);
-	}
+	if (j % 2 == 0)
+	  alpha2 = 0.75;
+	else
+	  alpha2 = 0.25;
 	
-	/* Fine pixels east of coarse pixel center. */
-	if (j == Nhalf - 1) /* East edge. */
-	{
-	  if (i == 0) /* NE corner */
-	    f_out[EA] += ce - 0.125 * (rhs[SE] + rhs[EA] - rhs[CE]);
-	  else if (i == Mhalf - 1) /* SE corner */
-	    f_out[EA] += ce - 0.125 * (rhs[NE] + rhs[EA] - rhs[CE]);
-	  else
-	    f_out[EA] += ce - 0.25 * rhs[EA];
-	}
-	else          /* Inner point. */
-	  f_out[EA] += 0.75 * ce + 0.25 * ea;
+	nw = (1 - alpha1) * (1 - alpha2) * (j > 0 && coarse_weight[index2] > 0);
+	ne = (1 - alpha1) *      alpha2  * (j < Nhalf - 1 && coarse_weight[index2 + Mhalf] > 0);
+	sw =      alpha1  * (1 - alpha2) * (i < Mhalf - 1 && j > 0 && coarse_weight[index2 + 1] > 0);
+	se =      alpha1  *      alpha2  * (i < Mhalf - 1 && j < Nhalf - 1 && coarse_weight[index2 + Mhalf + 1] > 0);
 	
-	/* Fine pixels southsoutheast of coarse pixel center. */
-	if (i < Mhalf - 1)
+	sum = nw + ne + sw + se;
+
+	if (sum > 0)
 	{
-	  if (j == Nhalf - 1) /* East edge. */
-	    f_out[SE] += 0.5 * (ce + so) - 0.25 * rhs[SE];
-	  else                /* Inner point. */
-	    f_out[SE] += 0.375 * (ce + so) + 0.125 * (ea + se);
+	  double contribution = 0;
+	  
+	  if (nw > 0)
+	    contribution += nw * v[index2];
+	  if (ne > 0)
+	    contribution += ne * v[index2 + Mhalf];
+	  if (sw > 0)
+	    contribution += sw * v[index2 + 1];
+	  if (se > 0)
+	    contribution += se * v[index2 + Mhalf + 1];
+	  
+	  f_out[index1] += contribution / sum;
 	}
       }
   }
   
   if (M % 2 == 0 && N % 2 == 1)
   {
-    for (j = 0; j < Nhalf; j++)
-      for (i = 0; i < Mhalf; i++)
+    for (j = 0; j < N; j++)
+      for (i = 0; i < M; i++)
       {
-	index1 = (j * Mhalf + i);
-	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	so = v[index1 + 1];
-	no = v[index1 - 1];
-	ea = v[index1 + Mhalf];
-	se = v[index1 + Mhalf + 1];
-	ne = v[index1 + Mhalf - 1];
-	CE = index2;
-	SO = index2 + 1;
-	EA = index2 + M;
-	SE = index2 + M + 1;
-	WE = index2 - M;
-	SW = index2 - M + 1;
+	double alpha1, alpha2;
+	double nw, ne, sw, se;
+	int uu, vv;
+	double sum;
 	
-	/* Fine pixels north of coarse pixel center. */
-	if (i == 0) /* North edge. */
-	{
-	  if (j == 0) /* NW corner */
-	    f_out[CE] += ce - 0.125 * (rhs[EA] + rhs[CE] - rhs[SO]);
-	  else if (j == Nhalf - 1) /* NE corner */
-	    f_out[CE] += ce - 0.125 * (rhs[WE] + rhs[CE] - rhs[SO]);
-	  else
-	    f_out[CE] += ce - 0.25 * rhs[CE];
-	}
-	else        /* Inner point. */
-	  f_out[CE] += 0.75 * ce + 0.25 * no;
+	index1 = j * M + i;
+	index2 = (j / 2) * Mhalf + (i - 1) / 2;
+
+	if (i % 2 == 0)
+	  alpha2 = 0.75;
+	else
+	  alpha2 = 0.25;
 	
-	/* Fine pixels eastnortheast of coarse pixel center. */
-	if (j < Nhalf - 1)
-	{
-	  if (i == 0) /* North edge. */
-	    f_out[EA] += 0.5 * (ce + ea) - 0.25 * rhs[EA];
-	  else        /* Inner point. */
-	    f_out[EA] += 0.375 * (ce + ea) + 0.125 * (no + ne);
-	}
+	if (j % 2 == 0)
+	  alpha1 = 0.0;
+	else
+	  alpha1 = 0.5;
 	
-	/* Fine pixels south of coarse pixel center. */
-	if (i == Mhalf - 1) /* South edge. */
-	{
-	  if (j == 0) /* SW corner */
-	    f_out[SO] += ce - 0.125 * (rhs[SE] + rhs[SO] - rhs[CE]);
-	  else if (j == Nhalf - 1) /* SE corner */
-	    f_out[SO] += ce - 0.125 * (rhs[SW] + rhs[SO] - rhs[CE]);
-	  else
-	    f_out[SO] += ce - 0.25 * rhs[SO];
-	}
-	else          /* Inner point. */
-	  f_out[SO] += 0.75 * ce + 0.25 * so;
+	nw = (1 - alpha1) * (1 - alpha2) * (i > 0 && coarse_weight[index2] > 0);
+	ne = (1 - alpha1) *      alpha2  * (i > 0 && j < Nhalf - 1 && coarse_weight[index2 + Mhalf] > 0);
+	sw =      alpha1  * (1 - alpha2) * (i < Mhalf - 1 && coarse_weight[index2 + 1] > 0);
+	se =      alpha1  *      alpha2  * (i < Mhalf - 1 && j < Nhalf - 1 && coarse_weight[index2 + Mhalf + 1] > 0);
 	
-	/* Fine pixels eastsoutheast of coarse pixel center. */
-	if (j < Nhalf - 1)
+	sum = nw + ne + sw + se;
+
+	if (sum > 0)
 	{
-	  if (i == Mhalf - 1) /* South edge. */
-	    f_out[SE] += 0.5 * (ce + ea) - 0.25 * rhs[SE];
-	  else                /* Inner point. */
-	    f_out[SE] += 0.375 * (ce + ea) + 0.125 * (so + se);
+	  double contribution = 0;
+	  
+	  if (nw > 0)
+	    contribution += nw * v[index2];
+	  if (ne > 0)
+	    contribution += ne * v[index2 + Mhalf];
+	  if (sw > 0)
+	    contribution += sw * v[index2 + 1];
+	  if (se > 0)
+	    contribution += se * v[index2 + Mhalf + 1];
+	  
+	  f_out[index1] += contribution / sum;
 	}
       }
   }
   
   if (M % 2 == 1 && N % 2 == 1)
   {
-    for (j = 0; j < Nhalf; j++)
-      for (i = 0; i < Mhalf; i++)
+    for (j = 0; j < N; j++)
+      for (i = 0; i < M; i++)
       {
-	index1 = (j * Mhalf + i);
-	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	so = v[index1 + 1];
-	ea = v[index1 + Mhalf];
-	se = v[index1 + Mhalf + 1];
-	CE = index2;
-	SO = index2 + 1;
-	EA = index2 + M;
-	SE = index2 + M + 1;
+	double alpha1, alpha2;
+	double nw, ne, sw, se;
+	int uu, vv;
+	double sum;
 	
-	/* Fine pixels on coarse pixel center. */
-	f_out[CE] += ce;
+	index1 = j * M + i;
+	index2 = (j / 2) * Mhalf + i / 2;
+
+	if (i % 2 == 0)
+	  alpha2 = 0.0;
+	else
+	  alpha2 = 0.5;
 	
-	/* Fine pixels south of coarse pixel center. */
-	if (i < Mhalf - 1)
-	  f_out[SO] += 0.5 * (ce + so);
+	if (j % 2 == 0)
+	  alpha1 = 0.0;
+	else
+	  alpha1 = 0.5;
 	
-	/* Fine pixels east of coarse pixel center. */
-	if (j < Nhalf - 1) /* South edge. */
-	  f_out[EA] += 0.5 * (ce + ea);
+	nw = (1 - alpha1) * (1 - alpha2) * (coarse_weight[index2] > 0);
+	ne = (1 - alpha1) *      alpha2  * (j < Nhalf - 1 && coarse_weight[index2 + Mhalf] > 0);
+	sw =      alpha1  * (1 - alpha2) * (i < Mhalf - 1 && coarse_weight[index2 + 1] > 0);
+	se =      alpha1  *      alpha2  * (i < Mhalf - 1 && j < Nhalf - 1 && coarse_weight[index2 + Mhalf + 1] > 0);
 	
-	/* Fine pixels southeast of coarse pixel center. */
-	if (i < Mhalf - 1 && j < Nhalf - 1)
-	  f_out[SE] += 0.25 * (ce + ea + so + se);
+	sum = nw + ne + sw + se;
+
+	if (sum > 0)
+	{
+	  double contribution = 0;
+	  
+	  if (nw > 0)
+	    contribution += nw * v[index2];
+	  if (ne > 0)
+	    contribution += ne * v[index2 + Mhalf];
+	  if (sw > 0)
+	    contribution += sw * v[index2 + 1];
+	  if (se > 0)
+	    contribution += se * v[index2 + Mhalf + 1];
+	  
+	  f_out[index1] += contribution / sum;
+	}
       }
   }
 }
@@ -1054,6 +1005,7 @@ poisson_multigrid2D(double *f, double *A, double *d,
   int k;
   double *r;
   double *r_downsampled;
+  double *coarse_weight;
   double *A_downsampled;
   double *v;
   int Mhalf;
@@ -1131,9 +1083,10 @@ poisson_multigrid2D(double *f, double *A, double *d,
   Mhalf = (M + 1) / 2;
   Nhalf = (N + 1) / 2;
   r_downsampled = mxCalloc(Mhalf * Nhalf, sizeof(*r_downsampled));
-  downsample2D(r, M, N, r_downsampled, Mhalf, Nhalf);
+  coarse_weight = mxCalloc(Mhalf * Nhalf, sizeof(*coarse_weight));
+  downsample2D(r, M, N, r_downsampled, Mhalf, Nhalf, A, coarse_weight);
   A_downsampled = mxCalloc(9 * Mhalf * Nhalf, sizeof(*A_downsampled));
-  galerkin2D(A, M, N, A_downsampled, Mhalf, Nhalf);
+  galerkin2D(A, M, N, A_downsampled, Mhalf, Nhalf, coarse_weight);
   
   /* Recurse to compute a correction. */
   v = mxCalloc(Mhalf * Nhalf, sizeof(*v));
@@ -1146,7 +1099,7 @@ poisson_multigrid2D(double *f, double *A, double *d,
       break;
   }
   
-  upsample2D(r, M, N, v, Mhalf, Nhalf, f_out);
+  upsample2D(r, M, N, v, Mhalf, Nhalf, f_out, coarse_weight);
   
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)
@@ -1154,6 +1107,7 @@ poisson_multigrid2D(double *f, double *A, double *d,
   
   mxFree(r);
   mxFree(r_downsampled);
+  mxFree(coarse_weight);
   mxFree(A_downsampled);
   mxFree(v);
 }
@@ -1166,6 +1120,7 @@ poisson_full_multigrid2D(double *lhs, double *rhs, int number_of_iterations,
 {
   double *lhs_downsampled;
   double *rhs_downsampled;
+  double *coarse_weight;
   double *f_coarse;
   int k;
   
@@ -1176,11 +1131,12 @@ poisson_full_multigrid2D(double *lhs, double *rhs, int number_of_iterations,
     int Mhalf = (M + 1) / 2;
     int Nhalf = (N + 1) / 2;
     rhs_downsampled = mxCalloc(Mhalf * Nhalf, sizeof(*rhs_downsampled));
-    downsample2D(rhs, M, N, rhs_downsampled, Mhalf, Nhalf);
+    coarse_weight = mxCalloc(Mhalf * Nhalf, sizeof(*coarse_weight));
+    downsample2D(rhs, M, N, rhs_downsampled, Mhalf, Nhalf, lhs, coarse_weight);
     lhs_downsampled = mxCalloc(9 * Mhalf * Nhalf, sizeof(*lhs_downsampled));
-    galerkin2D(lhs, M, N, lhs_downsampled, Mhalf, Nhalf);
+    galerkin2D(lhs, M, N, lhs_downsampled, Mhalf, Nhalf, coarse_weight);
 //    logmatrix(rhs_downsampled, Mhalf, Nhalf, "rhs_downsampled", "foo");
-//    logmatrix(lhs_downsampled, 9, Mhalf * Nhalf, "lhs_downsampled", "foo");
+    logmatrix(lhs_downsampled, 9, Mhalf * Nhalf, "lhs_downsampled", "foo");
     
     f_coarse = mxCalloc(Mhalf * Nhalf, sizeof(*f_coarse));
     poisson_full_multigrid2D(lhs_downsampled, rhs_downsampled,
@@ -1189,11 +1145,12 @@ poisson_full_multigrid2D(double *lhs, double *rhs, int number_of_iterations,
 //    logmatrix(f_coarse, Mhalf, Nhalf, "f_coarse", "foo");
     
     /* Upsample the coarse result. */
-    upsample2D(rhs, M, N, f_coarse, Mhalf, Nhalf, f_out);
+    upsample2D(rhs, M, N, f_coarse, Mhalf, Nhalf, f_out, coarse_weight);
 //    logmatrix(f_out, M, N, "f_fine", "foo");
 
     mxFree(f_coarse);
     mxFree(lhs_downsampled);
+    mxFree(coarse_weight);
     mxFree(rhs_downsampled);
   }
   
@@ -1307,7 +1264,7 @@ antigradient2D(double *g, double *mask, double mu, int number_of_iterations,
   mxFree(lhs);
 }
 
-
+#if 0
 /*************** 3D ****************/
 
 static void
@@ -4819,7 +4776,7 @@ antigradient3D(double *g, double mu, int number_of_iterations,
     f_out[i] += mu;
   }
 }
-
+#endif
 
 void
 mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -4917,7 +4874,9 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   if (dim == 2)
     antigradient2D(g, mask, mu, number_of_iterations, M, N, f_out);
+#if 0
   else
     antigradient3D(g, mu, number_of_iterations, M, N, P, f_out);
+#endif
 }
 
