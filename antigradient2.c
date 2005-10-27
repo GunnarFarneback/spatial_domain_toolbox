@@ -671,22 +671,7 @@ galerkin2D(int level, int M, int N, int Mhalf, int Nhalf,
 	  lhs_coarse[9 * index1] += lhs_coarse[9 * index1 + u];
 	  lhs_coarse[9 * index1 + u] = 0;
 	}
-      
-#if 0
-      if (i == 3 && j == 11)
-      {
-	logmatrix((double *)stencil1, 3, 3, "stencil1", "foo");
-	logmatrix((double *)stencil2, 5, 5, "stencil2", "foo");
-	logmatrix((double *)stencil3, 3, 3, "stencil3", "foo");
-	logmatrix((double *)mask1, 3, 3, "mask1", "foo");
-      }
-#endif
     }
-#if 0
-  logmatrix(lhs, 9, M*N, "Afine", "foo");
-  logmatrix(lhs_coarse, 9, Mhalf*Nhalf, "Acoarse", "foo");
-  logmatrix(coarse_weight, Mhalf, Nhalf, "coarse_weight", "foo");
-#endif
 }
 
 
@@ -924,8 +909,6 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
   int Mhalf;
   int Nhalf;
 
-//  logmatrix(rhs, M, N, "rhs", "foo");
-  
   /* Solve a sufficiently small problem directly. */
   if (M < RECURSION_SIZE_LIMIT || N < RECURSION_SIZE_LIMIT)
   {
@@ -980,11 +963,6 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
       r[index] = residual;
     }
 
-//  logmatrix(lhs, 9, M*N, "lhs before residual", "foo");
-//  logmatrix(rhs, M, N, "d before residual", "foo");
-//  logmatrix(f_out, M, N, "f_out before residual", "foo");
-//  logmatrix(r, M, N, "residual", "foo");
-  
   /* Downsample residual. */
   Mhalf = (M + 1) / 2;
   Nhalf = (N + 1) / 2;
@@ -1051,8 +1029,6 @@ poisson_full_multigrid2D(int level, double *rhs, double *weight,
   double *f_coarse;
   int k;
   
-  logmatrix(rhs, M, N, "rhs", "foo");
-  
   /* Unless already coarsest scale, first recurse to coarser scale. */
   if (M >= RECURSION_SIZE_LIMIT && N >= RECURSION_SIZE_LIMIT)
   {
@@ -1064,19 +1040,15 @@ poisson_full_multigrid2D(int level, double *rhs, double *weight,
     downsample2D(rhs, M, N, rhs_downsampled, Mhalf, Nhalf,
 		 weight, coarse_weight);
     galerkin2D(level, M, N, Mhalf, Nhalf, weight, coarse_weight);
-//    logmatrix(rhs_downsampled, Mhalf, Nhalf, "rhs_downsampled", "foo");
-    logmatrix(data.lhs[level + 1], 9, Mhalf * Nhalf, "lhs_downsampled", "foo");
     
     f_coarse = mxCalloc(Mhalf * Nhalf, sizeof(*f_coarse));
     poisson_full_multigrid2D(level + 1, rhs_downsampled, coarse_weight,
 			     number_of_iterations,
 			     Mhalf, Nhalf, f_coarse);
-//    logmatrix(f_coarse, Mhalf, Nhalf, "f_coarse", "foo");
     
     /* Upsample the coarse result. */
     upsample2D(rhs, M, N, f_coarse, Mhalf, Nhalf, f_out,
 	       weight, coarse_weight);
-//    logmatrix(f_out, M, N, "f_fine", "foo");
 
     mxFree(f_coarse);
     mxFree(coarse_weight);
@@ -1171,8 +1143,6 @@ antigradient2D(double *g, double *mask, double mu, int number_of_iterations,
 	lhs[9 * index1 + 4] = 1 + (W_missing);
     }
   
-  logmatrix(lhs, 9, M*N, "A", "foo");
-  logmatrix(rhs, M*N, 1, "b", "foo");
   /* Solve the equation system with the full multigrid algorithm.
    * Use W cycles and 2 presmoothing and 2 postsmoothing
    * Gauss-Seidel iterations.
