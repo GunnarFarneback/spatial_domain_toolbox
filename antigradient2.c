@@ -179,12 +179,14 @@ downsample2D(double *rhs, int M, int N,
 	se = weight[index2 + M + 1];
 	sum = nw + ne + sw + se;
 	coarse_weight[index1] = sum;
-	sum += (sum == 0);
-	
-	rhs_coarse[index1] = 4 / sum * (nw * rhs[index2]
-					+ ne * rhs[index2 + M]
-					+ sw * rhs[index2 + 1]
-					+ se * rhs[index2 + M + 1]);
+
+	if (sum > 0)
+	{
+	  rhs_coarse[index1] = 4 / sum * (nw * rhs[index2]
+					  + ne * rhs[index2 + M]
+					  + sw * rhs[index2 + 1]
+					  + se * rhs[index2 + M + 1]);
+	}
       }
   }
   
@@ -205,15 +207,17 @@ downsample2D(double *rhs, int M, int N,
 	se = 0.5 * VAL(i < Mhalf - 1, weight[index2 + M + 1]);
 	sum = nw + ne + w + e + sw + se;
 	coarse_weight[index1] = sum;
-	sum += (sum == 0);
-	
-	result = w * rhs[index2] + e * rhs[index2 + M];
-	if (i > 0)
-	  result += nw * rhs[index2 - 1] + ne * rhs[index2 + M - 1];
-	if (i < Mhalf - 1)
-	  result += sw * rhs[index2 + 1] + se * rhs[index2 + M + 1];
-    
-	rhs_coarse[index1] = 4 / sum * result;
+
+	if (sum > 0)
+	{
+	  result = w * rhs[index2] + e * rhs[index2 + M];
+	  if (i > 0)
+	    result += nw * rhs[index2 - 1] + ne * rhs[index2 + M - 1];
+	  if (i < Mhalf - 1)
+	    result += sw * rhs[index2 + 1] + se * rhs[index2 + M + 1];
+	  
+	  rhs_coarse[index1] = 4 / sum * result;
+	}
       }
   }
   
@@ -234,15 +238,17 @@ downsample2D(double *rhs, int M, int N,
 	se = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M + 1] != 0);
 	sum = nw + sw + n + s + ne + se;
 	coarse_weight[index1] = sum;
-	sum += (sum == 0);
-	
-	result = n * rhs[index2] + s * rhs[index2 + 1];
-	if (j > 0)
-	  result += nw * rhs[index2 - M] + sw * rhs[index2 - M + 1];
-	if (j < Nhalf - 1)
-	  result += ne * rhs[index2 + M] + se * rhs[index2 + M + 1];
-    
-	rhs_coarse[index1] = 4 / sum * result;
+
+	if (sum > 0)
+	{
+	  result = n * rhs[index2] + s * rhs[index2 + 1];
+	  if (j > 0)
+	    result += nw * rhs[index2 - M] + sw * rhs[index2 - M + 1];
+	  if (j < Nhalf - 1)
+	    result += ne * rhs[index2 + M] + se * rhs[index2 + M + 1];
+	  
+	  rhs_coarse[index1] = 4 / sum * result;
+	}
       }
   }
 
@@ -266,27 +272,29 @@ downsample2D(double *rhs, int M, int N,
 	se = 0.25 * VAL(i < Mhalf - 1 && j < Nhalf - 1, weight[index2 + M + 1]);
 	sum = c + n + s + w + e + nw + ne + sw + se;
 	coarse_weight[index1] = sum;
-	sum += (sum == 0);
+
+	if (sum > 0)
+	{
+	  result = c * rhs[index2];
+	  if (n > 0)
+	    result += n * rhs[index2 - 1];
+	  if (s > 0)
+	    result += s * rhs[index2 + 1];
+	  if (w > 0)
+	    result += w * rhs[index2 - M];
+	  if (e > 0)
+	    result += e * rhs[index2 + M];
+	  if (nw > 0)
+	    result += nw * rhs[index2 - M - 1];
+	  if (ne > 0)
+	    result += ne * rhs[index2 + M - 1];
+	  if (sw > 0)
+	    result += sw * rhs[index2 - M + 1];
+	  if (se > 0)
+	    result += se * rhs[index2 + M + 1];
 	
-	result = c * rhs[index2];
-	if (n > 0)
-	  result += n * rhs[index2 - 1];
-	if (s > 0)
-	  result += s * rhs[index2 + 1];
-	if (w > 0)
-	  result += w * rhs[index2 - M];
-	if (e > 0)
-	  result += e * rhs[index2 + M];
-	if (nw > 0)
-	  result += nw * rhs[index2 - M - 1];
-	if (ne > 0)
-	  result += ne * rhs[index2 + M - 1];
-	if (sw > 0)
-	  result += sw * rhs[index2 - M + 1];
-	if (se > 0)
-	  result += se * rhs[index2 + M + 1];
-	
-	rhs_coarse[index1] = 4 / sum * result;
+	  rhs_coarse[index1] = 4 / sum * result;
+	}
       }
   }
 }
@@ -308,21 +316,16 @@ galerkin2D(double *lhs, int M, int N,
       double stencil2[5][5];
       double stencil3[3][3];
       double mask1[3][3];
-      double mask2[5][5]; /* Can be int. */
-      double mask3[3][3];
-      double mask3sum;
       int u, v;
 
       for (u = 0; u < 5; u++)
 	for (v = 0; v < 5; v++)
 	{
 	  stencil2[u][v] = 0;
-	  mask2[u][v] = 0;
 	  if (u < 3 && v < 3)
 	  {
 	    stencil1[u][v] = 0;
 	    stencil3[u][v] = 0;
-	    mask3[u][v] = 0;
 	  }
 	}
 
@@ -343,10 +346,11 @@ galerkin2D(double *lhs, int M, int N,
 	double sw = weight[index2 + 1];
 	double se = weight[index2 + M + 1];
 
-	/* FIXME: If mean is 0 here we can short-circuit. */
 	double mean = (nw + sw + ne + se) / 4;
+
+	/* If mean is 0 here we can short-circuit. */
 	if (mean == 0)
-	  mean = 1;
+	  continue;
 	
 	stencil1[1][1] = nw / mean;
 	stencil1[1][2] = ne / mean;
@@ -364,8 +368,10 @@ galerkin2D(double *lhs, int M, int N,
 	double se = 0.5 * VAL(i < Mhalf - 1, weight[index2 + M + 1]);
 
 	double mean = (w + e + nw + ne + sw + se) / 4;
+
+	/* If mean is 0 here we can short-circuit. */
 	if (mean == 0)
-	  mean = 1;
+	  continue;
 	
 	stencil1[1][1] = w / mean;
 	stencil1[1][2] = e / mean;
@@ -385,8 +391,10 @@ galerkin2D(double *lhs, int M, int N,
 	double se = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M + 1] != 0);
 	
 	double mean = (n + s + nw + ne + sw + se) / 4;
+
+	/* If mean is 0 here we can short-circuit. */
 	if (mean == 0)
-	  mean = 1;
+	  continue;
 	
 	stencil1[1][1] = n / mean;
 	stencil1[2][1] = s / mean;
@@ -409,8 +417,10 @@ galerkin2D(double *lhs, int M, int N,
 	double se = 0.25 * VAL(i < Mhalf - 1 && j < Nhalf - 1, weight[index2 + M + 1]);
 
 	double mean = (c + s + e + w + n + se + sw + ne + nw) / 4;
+
+	/* If mean is 0 here we can short-circuit. */
 	if (mean == 0)
-	  mean = 1;
+	  continue;
 	
 	stencil1[0][0] = nw / mean;
 	stencil1[0][1] = n / mean;
@@ -432,32 +442,14 @@ galerkin2D(double *lhs, int M, int N,
 	    if (lhs[index] != 0.0)
 	    {
 	      stencil2[u+1][v+1] += stencil1[u][v] * lhs[index];
-	      if (stencil1[u][v] * lhs[index] != 0)
-		mask2[u+1][v+1] = 1;
 	      stencil2[u  ][v+1] += stencil1[u][v] * lhs[index + 1];
-	      if (stencil1[u][v] * lhs[index + 1] != 0)
-		mask2[u  ][v+1] = 1;
 	      stencil2[u+2][v+1] += stencil1[u][v] * lhs[index + 2];
-	      if (stencil1[u][v] * lhs[index + 2] != 0)
-		mask2[u+2][v+1] = 1;
 	      stencil2[u+1][v  ] += stencil1[u][v] * lhs[index + 3];
-	      if (stencil1[u][v] * lhs[index + 3] != 0)
-		mask2[u+1][v  ] = 1;
 	      stencil2[u+1][v+2] += stencil1[u][v] * lhs[index + 4];
-	      if (stencil1[u][v] * lhs[index + 4] != 0)
-		mask2[u+1][v+2] = 1;
 	      stencil2[u  ][v  ] += stencil1[u][v] * lhs[index + 5];
-	      if (stencil1[u][v] * lhs[index + 5] != 0)
-		mask2[u  ][v  ] = 1;
 	      stencil2[u  ][v+2] += stencil1[u][v] * lhs[index + 6];
-	      if (stencil1[u][v] * lhs[index + 6] != 0)
-		mask2[u  ][v+2] = 1;
 	      stencil2[u+2][v  ] += stencil1[u][v] * lhs[index + 7];
-	      if (stencil1[u][v] * lhs[index + 7] != 0)
-		mask2[u+2][v  ] = 1;
 	      stencil2[u+2][v+2] += stencil1[u][v] * lhs[index + 8];
-	      if (stencil1[u][v] * lhs[index + 8] != 0)
-		mask2[u+2][v+2] = 1;
 	    }
 	  }
 	}
@@ -490,16 +482,13 @@ galerkin2D(double *lhs, int M, int N,
 	    se =      alpha1  *      alpha2  * mask1[uu+1][vv+1];
 
 	    sum = nw + ne + sw + se;
-	    sum += (sum == 0);
-	    
-	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
-	    stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
-	    stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
-	    stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
-	    mask3[uu  ][vv  ] += alpha1 * alpha2 * mask2[u][v];
-	    mask3[uu  ][vv+1] += alpha1 * (1-alpha2) * mask2[u][v];
-	    mask3[uu+1][vv  ] += (1-alpha1) * alpha2 * mask2[u][v];
-	    mask3[uu+1][vv+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
+	    if (sum > 0)
+	    {
+	      stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	      stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	      stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	    }
 	  }
       }
 
@@ -535,23 +524,15 @@ galerkin2D(double *lhs, int M, int N,
 	    }
 
 	    sum = nw + ne + sw + se;
-	    sum += (sum == 0);
-	    
-	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
-	    stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
-	    if (alpha1 > 0)
+	    if (sum > 0)
 	    {
-	      stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
-	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
-	    }
-
-	    
-	    mask3[u/2  ][(v-1)/2  ] += alpha1 * alpha2 * mask2[u][v];
-	    mask3[u/2  ][(v-1)/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
-	    if (u < 4)
-	    {
-	      mask3[u/2+1][(v-1)/2  ] += (1-alpha1) * alpha2 * mask2[u][v];
-	      mask3[u/2+1][(v-1)/2+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
+	      stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	      stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	      if (alpha1 > 0)
+	      {
+		stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+		stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	      }
 	    }
 	  }
       }
@@ -588,22 +569,16 @@ galerkin2D(double *lhs, int M, int N,
 	    }
 
 	    sum = nw + ne + sw + se;
-	    sum += (sum == 0);
-	    
-	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
-	    stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
-	    if (alpha2 > 0)
+	    if (sum > 0)
 	    {
-	      stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
-	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	      stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	      stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	      if (alpha2 > 0)
+	      {
+		stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+		stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	      }
 	    }
-	    
-	    mask3[(u-1)/2  ][v/2  ] += alpha1 * alpha2 * mask2[u][v];
-	    if (v < 4)
-	      mask3[(u-1)/2  ][v/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
-	    mask3[(u-1)/2+1][v/2  ] += (1-alpha1) * alpha2 * mask2[u][v];
-	    if (v < 4)
-	      mask3[(u-1)/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
 	  }
       }
 
@@ -640,46 +615,28 @@ galerkin2D(double *lhs, int M, int N,
 	      se =      alpha1  * alpha2 * mask1[uu+1][vv+1];
 
 	    sum = nw + ne + sw + se;
-	    sum += (sum == 0);
-	    
-	    stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
-	    if (alpha1 > 0)
-	      stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
-	    if (alpha2 > 0)
-	      stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
-	    if (alpha1 > 0 && alpha2 > 0)
-	      stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
-
-	    
-	    mask3[u/2  ][v/2  ] += alpha1 * alpha2 * mask2[u][v];
-	    if (v < 4)
-	      mask3[u/2  ][v/2+1] += alpha1 * (1-alpha2) * mask2[u][v];
-	    if (u < 4)
-	      mask3[u/2+1][v/2  ] += (1-alpha1) * alpha2 * mask2[u][v];
-	    if (u < 4 && v < 4)
-	      mask3[u/2+1][v/2+1] += (1-alpha1) * (1-alpha2) * mask2[u][v];
+	    if (sum > 0)
+	    {
+	      stencil3[uu  ][vv  ] += nw * stencil2[u][v] / sum;
+	      if (alpha1 > 0)
+		stencil3[uu+1][vv  ] += sw * stencil2[u][v] / sum;
+	      if (alpha2 > 0)
+		stencil3[uu  ][vv+1] += ne * stencil2[u][v] / sum;
+	      if (alpha1 > 0 && alpha2 > 0)
+		stencil3[uu+1][vv+1] += se * stencil2[u][v] / sum;
+	    }
 	  }
       }
 
-      mask3sum = 0;
-      for (u = 0; u < 3; u++)
-	for (v = 0; v < 3; v++)
-	  mask3sum += mask3[u][v];
-
-      if (mask3sum == 0)
-	mask3sum = 1;
-
-      mask3sum = 16;
-      
-      lhs_coarse[9 * index1]     = 16 * stencil3[1][1] / mask3sum;
-      lhs_coarse[9 * index1 + 1] = 16 * stencil3[0][1] / mask3sum;
-      lhs_coarse[9 * index1 + 2] = 16 * stencil3[2][1] / mask3sum;
-      lhs_coarse[9 * index1 + 3] = 16 * stencil3[1][0] / mask3sum;
-      lhs_coarse[9 * index1 + 4] = 16 * stencil3[1][2] / mask3sum;
-      lhs_coarse[9 * index1 + 5] = 16 * stencil3[0][0] / mask3sum;
-      lhs_coarse[9 * index1 + 6] = 16 * stencil3[0][2] / mask3sum;
-      lhs_coarse[9 * index1 + 7] = 16 * stencil3[2][0] / mask3sum;
-      lhs_coarse[9 * index1 + 8] = 16 * stencil3[2][2] / mask3sum;
+      lhs_coarse[9 * index1]     = stencil3[1][1];
+      lhs_coarse[9 * index1 + 1] = stencil3[0][1];
+      lhs_coarse[9 * index1 + 2] = stencil3[2][1];
+      lhs_coarse[9 * index1 + 3] = stencil3[1][0];
+      lhs_coarse[9 * index1 + 4] = stencil3[1][2];
+      lhs_coarse[9 * index1 + 5] = stencil3[0][0];
+      lhs_coarse[9 * index1 + 6] = stencil3[0][2];
+      lhs_coarse[9 * index1 + 7] = stencil3[2][0];
+      lhs_coarse[9 * index1 + 8] = stencil3[2][2];
 
       for (u = 1; u < 9; u++)
 	if (lhs_coarse[9 * index1 + u] < 0)
@@ -695,8 +652,6 @@ galerkin2D(double *lhs, int M, int N,
 	logmatrix((double *)stencil2, 5, 5, "stencil2", "foo");
 	logmatrix((double *)stencil3, 3, 3, "stencil3", "foo");
 	logmatrix((double *)mask1, 3, 3, "mask1", "foo");
-	logmatrix((double *)mask2, 5, 5, "mask2", "foo");
-	logmatrix((double *)mask3, 3, 3, "mask3", "foo");
       }
 #endif
     }
