@@ -1010,6 +1010,8 @@ poisson_multigrid2D(double *f, double *A, double *d,
   double *v;
   int Mhalf;
   int Nhalf;
+
+//  logmatrix(d, M, N, "rhs", "foo");
   
   /* Solve a sufficiently small problem directly. */
   if (M < RECURSION_SIZE_LIMIT || N < RECURSION_SIZE_LIMIT)
@@ -1069,15 +1071,6 @@ poisson_multigrid2D(double *f, double *A, double *d,
 //  logmatrix(d, M, N, "d before residual", "foo");
 //  logmatrix(f_out, M, N, "f_out before residual", "foo");
 //  logmatrix(r, M, N, "residual", "foo");
-#if 0
-  mexPrintf("Residual:\n");
-  for (i = 0; i < M; i++) {
-    for (j = 0; j < M; j++)
-      mexPrintf("%9.3g ", r[j*M+i]);
-    mexPrintf("\n");
-  }
-  mexPrintf("\n");
-#endif
   
   /* Downsample residual. */
   Mhalf = (M + 1) / 2;
@@ -1104,6 +1097,29 @@ poisson_multigrid2D(double *f, double *A, double *d,
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)
     gauss_seidel2D(f_out, A, d, M, N);
+
+  /* Set the mean value to zero.
+   *
+   * FIXME: This should not be needed (I believe) and might indicate
+   * some bug elsewhere.
+   */
+  if (1)
+  {
+    double sum = 0.0;
+    int num_samples_in_mask = 0;
+    double mean;
+    
+    for (i = 0; i < M * N; i++)
+      if (A[9*i] != 0)
+      {
+	sum += f_out[i];
+	num_samples_in_mask++;
+      }
+    
+    mean = sum / num_samples_in_mask;
+    for (i = 0; i < M * N; i++)
+      f_out[i] -= mean;
+  }
   
   mxFree(r);
   mxFree(r_downsampled);
@@ -1123,6 +1139,8 @@ poisson_full_multigrid2D(double *lhs, double *rhs, int number_of_iterations,
   double *coarse_weight;
   double *f_coarse;
   int k;
+  
+  logmatrix(rhs, M, N, "rhs", "foo");
   
   /* Unless already coarsest scale, first recurse to coarser scale. */
   if (M >= RECURSION_SIZE_LIMIT && N >= RECURSION_SIZE_LIMIT)
