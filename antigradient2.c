@@ -17,6 +17,9 @@
 /* This can without cost be overdimensioned. */
 #define MAX_LEVELS 30
 
+/* Helper macro. */
+#define VAL(x, y) ((x) ? (y) : 0)
+
 struct data
 {
   mxArray *A_array;
@@ -169,8 +172,6 @@ gauss_seidel2D(double *f, double *A, double *d, int M, int N)
       }
   }
 }
-
-#define VAL(x, y) ((x) ? (y) : 0)
 
 static void
 downsample2D(double *rhs, int M, int N,
@@ -2325,9 +2326,9 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
         
         for (u = 0; u < 3; u++)
         {
-          for (v = 0; v < 3; u++)
+          for (v = 0; v < 3; v++)
           {
-            for (w = 0; w < 3; u++)
+            for (w = 0; w < 3; w++)
             {
               if (stencil1[u][v][w] != 0)
               {
@@ -2407,8 +2408,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2490,8 +2489,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2573,8 +2570,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2656,8 +2651,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2739,8 +2732,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2822,8 +2813,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2905,8 +2894,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -2988,8 +2975,6 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 if (sum > 0)
                 {
-                  double contribution = 0;
-                  
                   if (unw > 0)
                     stencil3[uu][vv][ww] += unw * stencil2[u][v][w] / sum;
                   if (dnw > 0)
@@ -3014,9 +2999,9 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
         
         for (k = 0; k < 27; k++)
         {
-          int a = (k % 3) - 1;
-          int b = ((k / 3) % 3) - 1;
-          int c = ((k / 9) % 3) - 1;
+          int a = (k % 3);
+          int b = ((k / 3) % 3);
+          int c = ((k / 9) % 3);
           lhs_coarse[27 * index1 + k] = stencil3[a][b][c];
         }
         
@@ -3935,6 +3920,8 @@ antigradient3D(double *g, double *mask, double mu, int number_of_iterations,
   int num_samples_in_mask;
   int MN = M * N;
   
+  clear_global_data();
+
   /* Compute left and right hand sides of Poisson problem with Neumann
    * boundary conditions, discretized by finite differences.
    */

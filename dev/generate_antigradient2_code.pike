@@ -60,7 +60,7 @@ string generate_downsample3D()
   s += "  int index1;\n";
   s += "  int index2;\n";
   s += "  int MN = M * N;\n";
-  s += "  double lw[3][3][3];\n";
+  s += "  double w[3][3][3];\n";
   s += "  double sum;\n";
   
   for (int oddness = 0; oddness < 8; oddness++)
@@ -345,9 +345,9 @@ string generate_galerkin3D()
   s += "\n";
   s += "for (u = 0; u < 3; u++)\n";
   s += "{\n";
-  s += "for (v = 0; v < 3; u++)\n";
+  s += "for (v = 0; v < 3; v++)\n";
   s += "{\n";
-  s += "for (w = 0; w < 3; u++)\n";
+  s += "for (w = 0; w < 3; w++)\n";
   s += "{\n";
   s += "if (stencil1[u][v][w] != 0)\n";
   s += "{\n";
@@ -426,8 +426,6 @@ string generate_galerkin3D()
     
     s += "if (sum > 0)\n";
     s += "{\n";
-    s += "double contribution = 0;\n";
-    s += "\n";
     s += upsample_contribution2(0, 0, 0);
     s += upsample_contribution2(0, 0, 1);
     s += upsample_contribution2(0, 1, 0);
@@ -446,10 +444,10 @@ string generate_galerkin3D()
   s += "\n";
   s += "for (k = 0; k < 27; k++)\n";
   s += "{\n";
-  s += "  int a = (k % 3) - 1;\n";
-  s += "  int b = ((k / 3) % 3) - 1;\n";
-  s += "  int c = ((k / 9) % 3) - 1;\n";
-  s += "  lhs_coarse[9 * index + k] = stencil3[a][b][c];\n";
+  s += "  int a = (k % 3);\n";
+  s += "  int b = ((k / 3) % 3);\n";
+  s += "  int c = ((k / 9) % 3);\n";
+  s += "  lhs_coarse[27 * index1 + k] = stencil3[a][b][c];\n";
   s += "}\n";
   s += "\n";
 
@@ -682,9 +680,9 @@ string generate_upsample3D()
 
 int main(int argc, array(string) argv)
 {
-//    write(generate_downsample3D());
-//    write("\n\n");
+    write(generate_downsample3D());
+    write("\n\n");
     write(generate_galerkin3D());
-//    write("\n\n");
-//    write(generate_upsample3D());
+    write("\n\n");
+    write(generate_upsample3D());
 }
