@@ -1034,7 +1034,6 @@ poisson_full_multigrid2D(int level, double *rhs, double *weight,
     downsample2D(rhs, M, N, rhs_downsampled, Mhalf, Nhalf,
 		 weight, coarse_weight);
     galerkin2D(level, M, N, Mhalf, Nhalf, weight, coarse_weight);
-    
     f_coarse = mxCalloc(Mhalf * Nhalf, sizeof(*f_coarse));
     poisson_full_multigrid2D(level + 1, rhs_downsampled, coarse_weight,
 			     number_of_iterations, Mhalf, Nhalf, f_coarse);
@@ -1203,7 +1202,7 @@ solve_directly3D(double *lhs, double *rhs, double *f_out, int M, int N, int P)
   int i, j, p;
   mxArray *x_array;
   mxArray *input_arrays[2];
-  
+
   if (data.A_array == NULL)
   {
     double *A;
@@ -1224,8 +1223,8 @@ solve_directly3D(double *lhs, double *rhs, double *f_out, int M, int N, int P)
 	    int u = (k % 3) - 1;
 	    int v = ((k / 3) % 3) - 1;
 	    int w = ((k / 9) % 3) - 1;
-
-	    A[index + s * (index + u + v * M + w * MN)] = lhs[27 * index + k];
+	    if (lhs[27 * index + k] != 0)
+	      A[index + s * (index + u + v * M + w * MN)] = lhs[27 * index + k];
 	  }
 	  if (lhs[27 * index + 13] == 0)
 	    A[index + s * index] = 1;
@@ -1239,7 +1238,7 @@ solve_directly3D(double *lhs, double *rhs, double *f_out, int M, int N, int P)
   dims[1] = 1;
   b_array = mxCreateNumericArray(2, dims, mxDOUBLE_CLASS, mxREAL);
   b = mxGetPr(b_array);
-  memcpy(b, rhs, M * N * sizeof(*rhs));
+  memcpy(b, rhs, s * sizeof(*rhs));
     
   input_arrays[0] = data.A_array;
   input_arrays[1] = b_array;
@@ -1348,7 +1347,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1410,7 +1409,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1472,7 +1471,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1552,7 +1551,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1614,7 +1613,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1694,7 +1693,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1774,7 +1773,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -1881,7 +1880,7 @@ downsample3D(double *rhs, int M, int N, int P,
             if (w[2][2][2] > 0)
               result += w[2][2][2] * rhs[index2 + MN + M + 1];
             
-            rhs_coarse[index1] = 4 / sum * result;
+            rhs_coarse[index1] = 8 / sum * result;
           }
         }
       }
@@ -2333,14 +2332,14 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
               if (stencil1[u][v][w] != 0)
               {
                 int index = 27 * (index2 + ((w - 1) * N + v - 1) * M + u - 1);
-                if (lhs[index] != 0)
+                if (lhs[index + 13] != 0)
                 {
                   int k;
                   for (k = 0; k < 27; k++)
                   {
-                    int a = (k % 3) - 1;
-                    int b = ((k / 3) % 3) - 1;
-                    int c = ((k / 9) % 3) - 1;
+                    int a = (k % 3);
+                    int b = ((k / 3) % 3);
+                    int c = ((k / 9) % 3);
                     stencil2[u + a][v + b][w + c] += stencil1[u][v][w] * lhs[index + k];
                   }
                 }
@@ -2459,8 +2458,8 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                   alpha3 = 0.25;
                 
                 uu = u / 2;
-                vv = v / 2;
-                ww = w / 2;
+                vv = (v - 1) / 2;
+                ww = (w - 1) / 2;
                 unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                        mask1[uu][vv][ww]);
                 dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
@@ -2540,7 +2539,7 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                   alpha3 = 0.25;
                 
                 uu = (u - 1) / 2;
-                vv = (v - 1) / 2;
+                vv = v / 2;
                 ww = (w - 1) / 2;
                 unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                        mask1[uu][vv][ww]);
@@ -2622,7 +2621,7 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 uu = u / 2;
                 vv = v / 2;
-                ww = w / 2;
+                ww = (w - 1) / 2;
                 unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                        mask1[uu][vv][ww]);
                 dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
@@ -2703,7 +2702,7 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                 
                 uu = (u - 1) / 2;
                 vv = (v - 1) / 2;
-                ww = (w - 1) / 2;
+                ww = w / 2;
                 unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                        mask1[uu][vv][ww]);
                 dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
@@ -2783,7 +2782,7 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                   alpha3 = 0.5;
                 
                 uu = u / 2;
-                vv = v / 2;
+                vv = (v - 1) / 2;
                 ww = w / 2;
                 unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                        mask1[uu][vv][ww]);
@@ -2864,8 +2863,8 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
                   alpha3 = 0.5;
                 
                 uu = (u - 1) / 2;
-                vv = (v - 1) / 2;
-                ww = (w - 1) / 2;
+                vv = v / 2;
+                ww = w / 2;
                 unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                        mask1[uu][vv][ww]);
                 dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
@@ -3807,7 +3806,7 @@ poisson_multigrid3D(double *f, int level, double *rhs, double *weight,
   downsample3D(r, M, N, P, r_downsampled, Mhalf, Nhalf, Phalf,
 	       weight, coarse_weight);
   galerkin3D(level, M, N, P, Mhalf, Nhalf, Phalf, weight, coarse_weight);
-  
+
   /* Recurse to compute a correction. */
   v = mxCalloc(Mhalf * Nhalf * Phalf, sizeof(*v));
   for (k = 0; k < nm; k++)
@@ -3881,7 +3880,7 @@ poisson_full_multigrid3D(int level, double *rhs, double *weight,
     downsample3D(rhs, M, N, P, rhs_downsampled, Mhalf, Nhalf, Phalf,
 		 weight, coarse_weight);
     galerkin3D(level, M, N, P, Mhalf, Nhalf, Phalf, weight, coarse_weight);
-    
+
     f_coarse = mxCalloc(Mhalf * Nhalf * Phalf, sizeof(*f_coarse));
     poisson_full_multigrid3D(level + 1, rhs_downsampled, coarse_weight,
 			     number_of_iterations,
@@ -3889,7 +3888,7 @@ poisson_full_multigrid3D(int level, double *rhs, double *weight,
     /* Upsample the coarse result. */
     upsample3D(rhs, M, N, P, f_coarse, Mhalf, Nhalf, Phalf, f_out,
 	       weight, coarse_weight);
-    
+
     mxFree(f_coarse);
     mxFree(coarse_weight);
     mxFree(rhs_downsampled);

@@ -162,7 +162,7 @@ string generate_downsample3D()
     s += "double result = 0;\n";
     s += s2;
     s += "\n";
-    s += "rhs_coarse[index1] = 4 / sum * result;\n";
+    s += "rhs_coarse[index1] = 8 / sum * result;\n";
     s += "}\n";
     s += "}\n";
     s += "}\n";
@@ -352,14 +352,14 @@ string generate_galerkin3D()
   s += "if (stencil1[u][v][w] != 0)\n";
   s += "{\n";
   s += "int index = 27 * (index2 + ((w - 1) * N + v - 1) * M + u - 1);\n";
-  s += "if (lhs[index] != 0)\n";
+  s += "if (lhs[index + 13] != 0)\n";
   s += "{\n";
   s += "int k;\n";
   s += "for (k = 0; k < 27; k++)\n";
   s += "{\n";
-  s += "  int a = (k % 3) - 1;\n";
-  s += "  int b = ((k / 3) % 3) - 1;\n";
-  s += "  int c = ((k / 9) % 3) - 1;\n";
+  s += "  int a = (k % 3);\n";
+  s += "  int b = ((k / 3) % 3);\n";
+  s += "  int c = ((k / 9) % 3);\n";
   s += "  stencil2[u + a][v + b][w + c] += stencil1[u][v][w] * lhs[index + k];\n";
   s += "}\n";
   s += "}\n";
@@ -408,8 +408,8 @@ string generate_galerkin3D()
     s += "\n";
 
     s += sprintf("uu = %s / 2;\n", Modd ? "u" : "(u - 1)");
-    s += sprintf("vv = %s / 2;\n", Modd ? "v" : "(v - 1)");
-    s += sprintf("ww = %s / 2;\n", Modd ? "w" : "(w - 1)");
+    s += sprintf("vv = %s / 2;\n", Nodd ? "v" : "(v - 1)");
+    s += sprintf("ww = %s / 2;\n", Podd ? "w" : "(w - 1)");
     
     s += sprintf("%s;\n", upsample_w2(0, 0, 0));
     s += sprintf("%s;\n", upsample_w2(0, 0, 1));
