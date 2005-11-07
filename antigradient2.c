@@ -12,7 +12,7 @@
 #include "mex.h"
 #include <string.h>
 
-#define RECURSION_SIZE_LIMIT 8
+#define RECURSION_SIZE_LIMIT 4
 
 /* This can without cost be overdimensioned. */
 #define MAX_LEVELS 30
@@ -1218,16 +1218,19 @@ solve_directly3D(double *lhs, double *rhs, double *f_out, int M, int N, int P)
 	{
 	  int index = (p * N + j) * M + i;
 	  int k;
-	  for (k = 0; k < 27; k++)
-	  {
-	    int u = (k % 3) - 1;
-	    int v = ((k / 3) % 3) - 1;
-	    int w = ((k / 9) % 3) - 1;
-	    if (lhs[27 * index + k] != 0)
-	      A[index + s * (index + u + v * M + w * MN)] = lhs[27 * index + k];
-	  }
 	  if (lhs[27 * index + 13] == 0)
 	    A[index + s * index] = 1;
+	  else
+	  {
+	    for (k = 0; k < 27; k++)
+	    {
+	      int u = (k % 3) - 1;
+	      int v = ((k / 3) % 3) - 1;
+	      int w = ((k / 9) % 3) - 1;
+	      if (lhs[27 * index + k] != 0)
+		A[index + s * (index + u + v * M + w * MN)] = lhs[27 * index + k];
+	    }
+	  }
 	}
     
     for (i = 0; i < s*s; i++)
