@@ -678,7 +678,7 @@ galerkin2D(int level, int M, int N, int Mhalf, int Nhalf,
 
 /* Upsample and apply correction. Bilinear interpolation. */
 static void
-upsample2D(double *rhs, int M, int N,
+upsample2D(int M, int N,
 	   double *v, int Mhalf, int Nhalf,
 	   double *f_out, double *weight, double *coarse_weight)
 {
@@ -977,7 +977,7 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
       break;
   }
   
-  upsample2D(r, M, N, v, Mhalf, Nhalf, f_out, weight, coarse_weight);
+  upsample2D(M, N, v, Mhalf, Nhalf, f_out, weight, coarse_weight);
   
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)
@@ -1039,7 +1039,7 @@ poisson_full_multigrid2D(int level, double *rhs, double *weight,
 			     number_of_iterations, Mhalf, Nhalf, f_coarse);
     
     /* Upsample the coarse result. */
-    upsample2D(rhs, M, N, f_coarse, Mhalf, Nhalf, f_out,
+    upsample2D(M, N, f_coarse, Mhalf, Nhalf, f_out,
 	       weight, coarse_weight);
 
     mxFree(f_coarse);
@@ -3022,7 +3022,7 @@ galerkin3D(int level, int M, int N, int P, int Mhalf, int Nhalf, int Phalf,
 
 
 static void
-upsample3D(double *rhs, int M, int N, int P,
+upsample3D(int M, int N, int P,
            double *v, int Mhalf, int Nhalf, int Phalf,
            double *f_out, double *weight, double *coarse_weight)
 {
@@ -3738,7 +3738,7 @@ upsample3D(double *rhs, int M, int N, int P,
 
 /* Recursive multigrid function.*/
 static void
-poisson_multigrid3D(double *f, int level, double *rhs, double *weight,
+poisson_multigrid3D(int level, double *rhs, double *weight,
 		    int n1, int n2, int nm,
 		    double *f_out,
 		    int M, int N, int P, int *directly_solved)
@@ -3765,9 +3765,6 @@ poisson_multigrid3D(double *f, int level, double *rhs, double *weight,
     return;
   }
   *directly_solved = 0;
-  
-  /* Initialize solution. */
-  memcpy(f_out, f, M * N * P * sizeof(*f_out));
   
   /* Pre-smoothing. */
   for (k = 0; k < n1; k++)
@@ -3815,13 +3812,13 @@ poisson_multigrid3D(double *f, int level, double *rhs, double *weight,
   for (k = 0; k < nm; k++)
   {
     int directly_solved;
-    poisson_multigrid3D(v, level + 1, r_downsampled, coarse_weight,
+    poisson_multigrid3D(level + 1, r_downsampled, coarse_weight,
 			n1, n2, nm, v, Mhalf, Nhalf, Phalf, &directly_solved);
     if (directly_solved)
       break;
   }
   
-  upsample3D(r, M, N, P, v, Mhalf, Nhalf, Phalf, f_out, weight, coarse_weight);
+  upsample3D(M, N, P, v, Mhalf, Nhalf, Phalf, f_out, weight, coarse_weight);
   
   /* Post-smoothing. */
   for (k = 0; k < n2; k++)
@@ -3832,7 +3829,7 @@ poisson_multigrid3D(double *f, int level, double *rhs, double *weight,
    * FIXME: This should not be needed (I believe) and might indicate
    * some bug elsewhere.
    */
-  if (1)
+  if (0)
   {
     double sum = 0.0;
     int num_samples_in_mask = 0;
@@ -3889,7 +3886,7 @@ poisson_full_multigrid3D(int level, double *rhs, double *weight,
 			     number_of_iterations,
 			     Mhalf, Nhalf, Phalf, f_coarse);
     /* Upsample the coarse result. */
-    upsample3D(rhs, M, N, P, f_coarse, Mhalf, Nhalf, Phalf, f_out,
+    upsample3D(M, N, P, f_coarse, Mhalf, Nhalf, Phalf, f_out,
 	       weight, coarse_weight);
 
     mxFree(f_coarse);
@@ -3901,7 +3898,7 @@ poisson_full_multigrid3D(int level, double *rhs, double *weight,
   for (k = 0; k < number_of_iterations; k++)
   {
     int directly_solved;
-    poisson_multigrid3D(f_out, level, rhs, weight, 2, 2, 2, f_out, M, N, P,
+    poisson_multigrid3D(level, rhs, weight, 2, 2, 2, f_out, M, N, P,
 			&directly_solved);
     if (directly_solved)
       break;
