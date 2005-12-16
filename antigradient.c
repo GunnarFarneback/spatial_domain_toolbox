@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <string.h>
 
-#define RECURSION_SIZE_LIMIT 8
+#define RECURSION_SIZE_LIMIT 4
 
 /*
  * ANTIGRADIENT
@@ -4309,11 +4309,7 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   if (nrhs < 3)
-  {
     number_of_iterations = 2;
-    if (M % 2 == 1 || N % 2 == 1 || P % 2 == 1)
-      number_of_iterations += 2;
-  }
   else
   {
     if (!mxIsNumeric(prhs[2]) || mxIsComplex(prhs[2])
