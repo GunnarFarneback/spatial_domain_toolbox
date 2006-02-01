@@ -11,16 +11,20 @@ function f = antigradient(g, mu, n)
 %
 % f = antigradient(g, mu, n) uses n multigrid iterations. The default value
 % of 2 iterations is fast but only moderately accurate. The algorithm
-% converges fast, however, so usually 10-15 iterations are sufficient to
+% converges quickly, however, so usually 10-15 iterations are sufficient to
 % reach full convergence.
 %
 % This function is based on transforming the inverse gradient problem to a
 % PDE - a Poisson equation with Neumann boundary conditions. This equation
 % is solved by an implementation of the full multigrid algorithm.
 %
-% The implementation is designed for best performance when the sides are
-% powers of 2, but it works for any sizes. With odd sizes it may be
-% necessary to increase the number of iterations by about 2.
+% The implementation is most efficient when all sides are of approximately
+% the same size. The worst case is when two sides are large and the
+% third side much smaller. The reason is that only uniform
+% downsampling is implemented and when the smallest side becomes
+% smaller than 4, a direct solution is applied. It makes no big
+% difference whether the sides are odd or even, although sides which
+% are of the form 2^k+1 give somewhat faster convergence.
 %
 % Author: Gunnar Farnebäck
 %         Medical Informatics
