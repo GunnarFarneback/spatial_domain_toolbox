@@ -41,6 +41,8 @@ make_Abc_interlace.m
 make_tensors_fast.m
 min_quadform.c
 min_quadform.m
+neighborhoodloop.c
+neighborhoodloop.m
 normconv.c
 normconv.m
 one_frame_motion.m
@@ -80,7 +82,7 @@ yosemite_sequence/yos16.tif
 			    Prerequisites
 
 In order for this toolbox to be useful, you need to have Matlab
-installed. The toolbox has been tested with Matlab 5.3.
+installed. The toolbox has been tested with Matlab 7.
 
 
 			     Installation
@@ -105,6 +107,8 @@ found at either of these pages:
 
 http://www.isy.liu.se/~gf/publications.html
 http://lmi.bwh.harvard.edu/papers/gunnar.html
+http://www.imt.liu.se/mi/Publications/gunnar.html
+
 
 			 Further Development
 
@@ -119,5 +123,5 @@ to the author at gf@isy.liu.se. The toolbox is of course provided as
 is, no warranty, etc.
 
 
-Linköping 2002-12-17
+Linköping 2006-03-24
 Gunnar Farnebäck
