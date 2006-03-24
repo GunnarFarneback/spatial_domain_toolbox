@@ -27,6 +27,8 @@ function varargout = arrayloop(varargin)
 % an inline function. It is supposed that the first argument after N
 % which is either a string or a scalar is N.
 %
+% See also NEIGHBORHOODLOOP.
+%
 % Author: Gunnar Farnebäck
 %         Medical Informatics
 %         Linköping University, Sweden

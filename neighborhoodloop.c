@@ -4,9 +4,9 @@
 #define DEBUG 0
 
 /*
- * ARRAYLOOP
+ * NEIGHBORHOODLOOP
  * 
- * See the help text in arrayloop.m for a description.
+ * See the help text in neighborhoodloop.m for a description.
  * 
  * Author: Gunnar Farnebäck
  *         Medical Informatics
