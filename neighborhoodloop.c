@@ -17,7 +17,7 @@
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     int N;
-    int size;
+    int *neighborhoodsize;
     int k, r;
     int x;
     int number_of_arrays;
@@ -64,22 +64,37 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (N < 0)
 	mexErrMsgTxt("N must not be negative.");
 
-    /* Second we expect another scalar. */
+    /* Second we expect another scalar or a vector of length N. */
     if (!mxIsNumeric(prhs[1]) || mxIsComplex(prhs[1])
 	|| mxIsSparse(prhs[1]) || !mxIsDouble(prhs[1])
 	|| mxGetNumberOfDimensions(prhs[1]) > 2
-	|| mxGetDimensions(prhs[1])[1] != 1
-	|| mxGetDimensions(prhs[1])[1] != 1)
+	|| ((mxGetDimensions(prhs[1])[0] != 1
+	     || mxGetDimensions(prhs[1])[1] != 1)
+	    && (mxGetDimensions(prhs[1])[0] 
+		* mxGetDimensions(prhs[1])[1] != N)))
     {
-	mexErrMsgTxt("size is expected to be a scalar.");
+	mexErrMsgTxt("size is expected to be a scalar or a vector of length N.");
     }
 
-    size = (int) mxGetScalar(prhs[1]);
-    if ((double) size != mxGetScalar(prhs[1]))
-	mexErrMsgTxt("size is expected to be an integer.");
+    neighborhoodsize = mxCalloc(N, sizeof(*neighborhoodsize));
+    if (neighborhoodsize == NULL)
+	mexErrMsgTxt("Failed to allocate an array.");
+    number_of_neighborhood_points = 1;
+    for (r = 0; r < N; r++)
+    {
+	double size;
+	if (mxGetDimensions(prhs[1])[0] * mxGetDimensions(prhs[1])[1] == 1)
+	    size = mxGetScalar(prhs[1]);
+	else
+	    size = mxGetPr(prhs[1])[r];
+	neighborhoodsize[r] = (int) size;
+	number_of_neighborhood_points *= neighborhoodsize[r];
+	if ((double) neighborhoodsize[r] != size)
+	    mexErrMsgTxt("size is expected to be integer.");
 
-    if (size < 0 || size % 2 != 1)
+	if (neighborhoodsize[r] < 0 || neighborhoodsize[r] % 2 != 1)
 	mexErrMsgTxt("size must be positive and odd.");
+    }
 
     /* Then a number of arrays. */
     number_of_arrays = 0;
@@ -214,7 +229,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		number_of_elements[k] *= d;
 	    }
 	    else
-		dims[r] = size;
+		dims[r] = neighborhoodsize[r];
 	    
 	    num_dims++;
 	}
@@ -239,12 +254,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (output_arrays == NULL)
 	mexErrMsgTxt("Failed to allocate an array.");
 
-    /* Reallocate dims. */
-    mxFree(dims);
-    dims = mxCalloc(max_number_of_dimensions, sizeof(*dims));
-    if (dims == NULL)
-	mexErrMsgTxt("Failed to allocate an array.");
-    
     /* Set up the first N dimension sizes. */
     for (r = 0; r < N; r++)
     {
@@ -260,12 +269,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	mexErrMsgTxt("Failed to allocate an array.");
 
     /* Set up arrays to keep track of the neighborhood points. */
-    number_of_neighborhood_points = 1;
-    for (r = 0; r < N; r++)
-    {
-	number_of_neighborhood_points *= size;
-    }
-
     neighborhood_coords = mxCalloc(number_of_neighborhood_points * N,
 				   sizeof(*neighborhood_coords));
     if (neighborhood_coords == NULL)
@@ -282,8 +285,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	int delta = 0;
 	for (r = 0; r < N; r++)
 	{
-	    int coord = kk % size - size / 2;
-	    kk /= size;
+	    int coord = kk % neighborhoodsize[r] - neighborhoodsize[r] / 2;
+	    kk /= neighborhoodsize[r];
 	    neighborhood_coords[k * N + r] = coord;
 	}
 	for (r = N - 1; r >= 0; r--)
@@ -374,6 +377,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		    max_number_of_dimensions = M;
 	    }
 
+	    /* Reallocate dims. */
+	    mxFree(dims);
+	    dims = mxCalloc(max_number_of_dimensions, sizeof(*dims));
+	    if (dims == NULL)
+		mexErrMsgTxt("Failed to allocate an array.");
+	    
+	    /* Set up the first N dimension sizes. */
+	    for (r = 0; r < N; r++)
+	    {
+		if (r < mxGetNumberOfDimensions(prhs[2]))
+		    dims[r] = mxGetDimensions(prhs[2])[r];
+		else
+		    dims[r] = 1;
+	    }
+	    
 	    /* Loop over each array. */
 	    for (k = 0; k < nlhs; k++)
 	    {
@@ -440,4 +458,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	    mxDestroyArray(output_arrays[k]);
 	}
     }
+
+    mxFree(neighborhoodsize);
+    if (!function_is_handle)
+	mxFree(function_name);
+    mxFree(number_of_elements);
+    mxFree(number_of_elements2);
+    mxFree(input_arrays);
+    mxFree(output_arrays);
+    mxFree(dims);
+    mxFree(xcoords);
+    mxFree(neighborhood_coords);
+    mxFree(neighborhood_delta);
 }
