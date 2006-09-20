@@ -25,7 +25,7 @@ function varargout = arrayloop(varargin)
 % which is the name of either a builtin function, an m-file function,
 % or a mex function. Alternatively func can be a function handle or
 % an inline function. It is supposed that the first argument after N
-% which is either a string or a scalar is N.
+% which is either a string or a scalar is func.
 %
 % See also NEIGHBORHOODLOOP.
 %
