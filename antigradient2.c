@@ -254,7 +254,7 @@ downsample2D(double *rhs, int M, int N,
 	n  = weight[index2];
 	s  = weight[index2 + 1];
 	ne = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M]);
-	se = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M + 1] != 0);
+	se = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M + 1]);
 	sum = nw + sw + n + s + ne + se;
 	coarse_weight[index1] = sum;
 
@@ -280,7 +280,7 @@ downsample2D(double *rhs, int M, int N,
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
 	
-	c  = (weight[index2] != 0);
+	c  = weight[index2];
 	n  = 0.5 * VAL(i > 0, weight[index2 - 1]);
 	s  = 0.5 * VAL(i < Mhalf - 1, weight[index2 + 1]);
 	w  = 0.5 * VAL(j > 0, weight[index2 - M]);
@@ -416,7 +416,7 @@ galerkin2D(int level, int M, int N, int Mhalf, int Nhalf,
 	double n  = weight[index2];
 	double s  = weight[index2 + 1];
 	double ne = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M]);
-	double se = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M + 1] != 0);
+	double se = 0.5 * VAL(j < Nhalf - 1, weight[index2 + M + 1]);
 	
 	double mean = (n + s + nw + ne + sw + se) / 4;
 
@@ -434,7 +434,7 @@ galerkin2D(int level, int M, int N, int Mhalf, int Nhalf,
       
       if (M % 2 == 1 && N % 2 == 1)
       {
-	double c  = (weight[index2] != 0);
+	double c  = weight[index2];
 	double n  = 0.5 * VAL(i > 0, weight[index2 - 1]);
 	double s  = 0.5 * VAL(i < Mhalf - 1, weight[index2 + 1]);
 	double w  = 0.5 * VAL(j > 0, weight[index2 - M]);
@@ -801,19 +801,19 @@ upsample2D(int M, int N,
 	  continue;
 
 	if (i % 2 == 0)
-	  alpha2 = 0.75;
+	  alpha1 = 0.75;
 	else
-	  alpha2 = 0.25;
+	  alpha1 = 0.25;
 	
 	if (j % 2 == 0)
-	  alpha1 = 0.0;
+	  alpha2 = 0.0;
 	else
-	  alpha1 = 0.5;
+	  alpha2 = 0.5;
 	
-	nw = (1 - alpha1) * (1 - alpha2) * VAL(i > 0, coarse_weight[index2] > 0);
-	ne = (1 - alpha1) *      alpha2  * VAL(i > 0 && j < Nhalf - 1, coarse_weight[index2 + Mhalf] > 0);
-	sw =      alpha1  * (1 - alpha2) * VAL(i < Mhalf - 1, coarse_weight[index2 + 1] > 0);
-	se =      alpha1  *      alpha2  * VAL(i < Mhalf - 1 && j < Nhalf - 1, coarse_weight[index2 + Mhalf + 1] > 0);
+	nw = (1 - alpha1) * (1 - alpha2) * VAL(i > 0, coarse_weight[index2]);
+	ne = (1 - alpha1) *      alpha2  * VAL(i > 0 && j < Nhalf - 1, coarse_weight[index2 + Mhalf]);
+	sw =      alpha1  * (1 - alpha2) * VAL(i < Mhalf - 1, coarse_weight[index2 + 1]);
+	se =      alpha1  *      alpha2  * VAL(i < Mhalf - 1 && j < Nhalf - 1, coarse_weight[index2 + Mhalf + 1]);
 	
 	sum = nw + ne + sw + se;
 
@@ -851,14 +851,14 @@ upsample2D(int M, int N,
 	  continue;
 
 	if (i % 2 == 0)
-	  alpha2 = 0.0;
-	else
-	  alpha2 = 0.5;
-	
-	if (j % 2 == 0)
 	  alpha1 = 0.0;
 	else
 	  alpha1 = 0.5;
+	
+	if (j % 2 == 0)
+	  alpha2 = 0.0;
+	else
+	  alpha2 = 0.5;
 	
 	nw = (1 - alpha1) * (1 - alpha2) * coarse_weight[index2];
 	ne = (1 - alpha1) *      alpha2  * VAL(j < Nhalf - 1, coarse_weight[index2 + Mhalf]);
@@ -1003,7 +1003,8 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
     
     mean = sum / num_samples_in_mask;
     for (i = 0; i < M * N; i++)
-      f_out[i] -= mean;
+      if (weight[i] != 0)
+	f_out[i] -= mean;
   }
   
   mxFree(r);
@@ -3844,7 +3845,8 @@ poisson_multigrid3D(int level, double *rhs, double *weight,
     
     mean = sum / num_samples_in_mask;
     for (i = 0; i < M * N * P; i++)
-      f_out[i] -= mean;
+      if (weight[i] != 0)
+	f_out[i] -= mean;
   }
   
   mxFree(r);
