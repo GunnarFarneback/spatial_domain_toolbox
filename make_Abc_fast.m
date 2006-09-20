@@ -262,7 +262,7 @@ switch N
 	
     case 3
 	% Set up applicability and basis functions.
-	applicability = tensorprod(a, shiftdim(a,-1), shiftdim(a,-2));
+	applicability = outerprod(a, a, a);
 	[x,y,t] = ndgrid(-n:n);
 	b = cat(4, ones(size(x)), x, y, t, x.*x, y.*y, t.*t, x.*y, x.*t, y.*t);
 	nb = size(b,4);
@@ -390,8 +390,7 @@ switch N
 	
     case 4
 	% Set up applicability and basis functions.
-	applicability = tensorprod(a, shiftdim(a,-1), shiftdim(a,-2), ...
-				   shiftdim(a,-3));
+	applicability = outerprod(a, a, a, a);
 	[x,y,z,t] = ndgrid(-n:n);
 	b = cat(5, ones(size(x)), x, y, z, t, x.*x, y.*y, z.*z, t.*t, ...
 		x.*y, x.*z, x.*t, y.*z, y.*t, z.*t);

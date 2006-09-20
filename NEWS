@@ -1,5 +1,6 @@
 2.1
 
+- New function outerprod to compute outer products of arrays.
 - New function neighborhoodloop which works like arrayloop but
   generates neighborhoods around each point, which are passed to a
   callback function.

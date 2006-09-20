@@ -1,3 +1,11 @@
+2006-09-20  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* make_tensors_fast.m: Replace tensorprod with outerprod.
+
+	* make_Abc_fast.m: Replace tensorprod with outerprod.
+
+	* outerprod.m: New file.
+
 2006-03-24  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* arrayloop.m: Added pointer to neighborhoodloop.
