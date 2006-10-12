@@ -1,5 +1,7 @@
 2006-10-12  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
+	* Updated README.
+
 	* tensorprod.m: Complete rewrite and changed functionality.
 
 	* outerprod.m: Corrected affiliation.

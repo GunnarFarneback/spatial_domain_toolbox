@@ -1,12 +1,39 @@
 			 General Information
 
-This is spatial_domain_toolbox-2.0, a collection of matlab functions
-and scripts implementing some of the algorithms described in
-"Polynomial Expansion for Orientation and Motion Estimation", the
-Ph.D. thesis of Gunnar Farnebäck. The latest version should always be
-available at http://www.isy.liu.se/~gf/software/.
+This is spatial_domain_toolbox-2.1, a collection of matlab functions
+and scripts written by Gunnar Farnebäck. Originally this contained
+implementations of some of the algorithms described in his Ph.D. thesis
+"Polynomial Expansion for Orientation and Motion Estimation" but has
+subsequently been extended with other algorithms. A common theme is
+that the algorithms work on multidimensional signals and are designed
+and used directly in the spatial (or spatiotemporal) domain, without
+involving e.g. Fourier or wavelet transforms. Some functions even more
+generally apply to  multidimensional arrays. 
 
-Author is Gunnar Farnebäck, gf@isy.liu.se.
+Download instructions for the latest version should always be
+available at http://www.imt.liu.se/mi/tools/.
+
+Author is Gunnar Farnebäck, gunnar@imt.liu.se.
+
+
+			 News in Version 2.1
+
+* New general function neighborhoodloop.
+* Significantly improved function tensorprod (but see next section!).
+* New general function outerprod.
+* Significant improvements of arrayloop.
+* New function antigradient for reconstruction from gradients.
+* Bugfixes.
+
+See the file NEWS for details and older news.
+
+
+		   Important Notice for Version 2.1
+
+The function tensorprod has been changed in a way that is not
+backwards compatible. If you have used the old tensorprod you need to
+update your code for the new definition or if appropriate convert to
+the new function outerprod.
 
 
 			       License
@@ -14,69 +41,9 @@ Author is Gunnar Farnebäck, gf@isy.liu.se.
 This is free software, published under the GNU General Public License
 (GPL). What this basically means is that you are free to use, modify,
 and redistribute the program under the same license. See the file
-COPYING for details.
-
-
-				Files
-
-The tar archive should contain the following files:
-
-README                       this file
-COPYING                      GPL license text
-NEWS
-angular_error.m
-antigradient.c
-antigradient.m
-arrayloop.c
-arrayloop.m
-compute_displacement.m
-conv3.c
-conv3.m
-estimate_disparity.m
-estimate_displacement.m
-evaluate_velocity.m
-gaussian_app.m
-make_Abc_fast.m
-make_Abc_interlace.m
-make_tensors_fast.m
-min_quadform.c
-min_quadform.m
-neighborhoodloop.c
-neighborhoodloop.m
-normconv.c
-normconv.m
-one_frame_motion.m
-polyexp_cout_helper.m
-polyexp.m
-polyexp_solve_system.c
-polyexp_solve_system.m
-poly_to_tensor.m
-prepare_displacement_matrices.c
-prepare_displacement_matrices.m
-read_yosemite.m
-remove_isotropic.m
-tensorprod.m
-test_yosemite.m
-velocity_from_tensors.m
-velocity_segment.c
-velocity_segment.m
-yosemite_sequence/README
-yosemite_sequence/correct_flow.mat
-yosemite_sequence/yos2.tif
-yosemite_sequence/yos3.tif
-yosemite_sequence/yos4.tif
-yosemite_sequence/yos5.tif
-yosemite_sequence/yos6.tif
-yosemite_sequence/yos7.tif
-yosemite_sequence/yos8.tif
-yosemite_sequence/yos9.tif
-yosemite_sequence/yos10.tif
-yosemite_sequence/yos11.tif
-yosemite_sequence/yos12.tif
-yosemite_sequence/yos13.tif
-yosemite_sequence/yos14.tif
-yosemite_sequence/yos15.tif
-yosemite_sequence/yos16.tif
+COPYING for details. If you want to use this code in a way that is not
+covered by the license, contact the author to negotiate a different
+license.
 
 
 			    Prerequisites
@@ -112,16 +79,20 @@ http://www.imt.liu.se/mi/Publications/gunnar.html
 
 			 Further Development
 
-Some missing algorithms from the Ph.D. thesis are planned for
-inclusion in later versions of the toolbox.
+New algorithms and functions are added from time to time. Development
+versions are available in a subversion repository at
+http://lsvn.lysator.liu.se/svnroot/spatial_domain_toolbox/trunk.
+This is best accessed using a subversion client, see 
+http://subversion.tigris.org, but a common web browser can also be
+used to access the most recent versions of the files.
 
 
 			     Bug Reports
 
 Please send bug reports, bug fixes, improvements, and success stories
-to the author at gf@isy.liu.se. The toolbox is of course provided as
+to the author at gunnar@imt.liu.se. The toolbox is of course provided as
 is, no warranty, etc.
 
 
-Linköping 2006-03-24
+Linköping 2006-10-12
 Gunnar Farnebäck
