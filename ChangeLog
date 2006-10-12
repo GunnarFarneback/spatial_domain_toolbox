@@ -1,3 +1,13 @@
+2006-10-12  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* tensorprod.m: Complete rewrite and changed functionality.
+
+	* outerprod.m: Corrected affiliation.
+
+	* tensorprodc.m: New file.
+
+	* tensorprodc.c: New file.
+
 2006-09-20  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* make_tensors_fast.m: Replace tensorprod with outerprod.

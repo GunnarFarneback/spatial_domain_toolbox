@@ -3,7 +3,7 @@ function z = outerprod(x, y, varargin)
 %             Singular dimensions are ignored and automatically squeezed.
 %
 % Author: Gunnar Farnebäck
-%         Computer Vision Laboratory
+%         Medical Informatics
 %         Linköping University, Sweden
 %         gf@isy.liu.se
 

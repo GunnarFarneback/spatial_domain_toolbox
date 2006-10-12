@@ -1,5 +1,7 @@
 2.1
 
+- Changed functionality of tensorprod.m, NOT BACKWARDS COMPATIBLE!
+- New mex function tensorprodc.c.
 - New function outerprod to compute outer products of arrays.
 - New function neighborhoodloop which works like arrayloop but
   generates neighborhoods around each point, which are passed to a
