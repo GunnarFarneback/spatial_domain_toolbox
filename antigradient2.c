@@ -711,9 +711,9 @@ upsample2D(int M, int N,
 	  alpha2 = 0.25;
 	
 	nw = (1 - alpha1) * (1 - alpha2) * VAL(i > 0 && j > 0, coarse_weight[index2]);
-	ne = (1 - alpha1) *      alpha2  * VAL(i > 0 && j < Nhalf - 1, coarse_weight[index2 + Mhalf]);
-	sw =      alpha1  * (1 - alpha2) * VAL(i < Mhalf - 1 && j > 0, coarse_weight[index2 + 1]);
-	se =      alpha1  *      alpha2  * VAL(i < Mhalf - 1 && j < Nhalf - 1, coarse_weight[index2 + Mhalf + 1]);
+	ne = (1 - alpha1) *      alpha2  * VAL(i > 0 && j < N - 1, coarse_weight[index2 + Mhalf]);
+	sw =      alpha1  * (1 - alpha2) * VAL(i < M - 1 && j > 0, coarse_weight[index2 + 1]);
+	se =      alpha1  *      alpha2  * VAL(i < M - 1 && j < N - 1, coarse_weight[index2 + Mhalf + 1]);
 	
 	sum = nw + ne + sw + se;
 
@@ -761,9 +761,9 @@ upsample2D(int M, int N,
 	  alpha2 = 0.25;
 	
 	nw = (1 - alpha1) * (1 - alpha2) * VAL(j > 0, coarse_weight[index2]);
-	ne = (1 - alpha1) *      alpha2  * VAL(j < Nhalf - 1, coarse_weight[index2 + Mhalf]);
-	sw =      alpha1  * (1 - alpha2) * VAL(i < Mhalf - 1 && j > 0, coarse_weight[index2 + 1]);
-	se =      alpha1  *      alpha2  * VAL(i < Mhalf - 1 && j < Nhalf - 1, coarse_weight[index2 + Mhalf + 1]);
+	ne = (1 - alpha1) *      alpha2  * VAL(j < N - 1, coarse_weight[index2 + Mhalf]);
+	sw =      alpha1  * (1 - alpha2) * VAL(i < M - 1 && j > 0, coarse_weight[index2 + 1]);
+	se =      alpha1  *      alpha2  * VAL(i < M - 1 && j < N - 1, coarse_weight[index2 + Mhalf + 1]);
 	
 	sum = nw + ne + sw + se;
 
@@ -811,9 +811,9 @@ upsample2D(int M, int N,
 	  alpha2 = 0.5;
 	
 	nw = (1 - alpha1) * (1 - alpha2) * VAL(i > 0, coarse_weight[index2]);
-	ne = (1 - alpha1) *      alpha2  * VAL(i > 0 && j < Nhalf - 1, coarse_weight[index2 + Mhalf]);
-	sw =      alpha1  * (1 - alpha2) * VAL(i < Mhalf - 1, coarse_weight[index2 + 1]);
-	se =      alpha1  *      alpha2  * VAL(i < Mhalf - 1 && j < Nhalf - 1, coarse_weight[index2 + Mhalf + 1]);
+	ne = (1 - alpha1) *      alpha2  * VAL(i > 0 && j < N - 1, coarse_weight[index2 + Mhalf]);
+	sw =      alpha1  * (1 - alpha2) * VAL(i < M - 1, coarse_weight[index2 + 1]);
+	se =      alpha1  *      alpha2  * VAL(i < M - 1 && j < N - 1, coarse_weight[index2 + Mhalf + 1]);
 	
 	sum = nw + ne + sw + se;
 
@@ -861,9 +861,9 @@ upsample2D(int M, int N,
 	  alpha2 = 0.5;
 	
 	nw = (1 - alpha1) * (1 - alpha2) * coarse_weight[index2];
-	ne = (1 - alpha1) *      alpha2  * VAL(j < Nhalf - 1, coarse_weight[index2 + Mhalf]);
-	sw =      alpha1  * (1 - alpha2) * VAL(i < Mhalf - 1, coarse_weight[index2 + 1]);
-	se =      alpha1  *      alpha2  * VAL(i < Mhalf - 1 && j < Nhalf - 1, coarse_weight[index2 + Mhalf + 1]);
+	ne = (1 - alpha1) *      alpha2  * VAL(j < N - 1, coarse_weight[index2 + Mhalf]);
+	sw =      alpha1  * (1 - alpha2) * VAL(i < M - 1, coarse_weight[index2 + 1]);
+	se =      alpha1  *      alpha2  * VAL(i < M - 1 && j < N - 1, coarse_weight[index2 + Mhalf + 1]);
 	
 	sum = nw + ne + sw + se;
 
