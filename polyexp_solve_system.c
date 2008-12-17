@@ -232,10 +232,21 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	{
 	    p_r = mxGetPr(output[0]);
 	    p_i = mxGetPi(output[0]);
-	    for (i = 0; i < M; i++)
-	    {
-		r_r[k + i * num_elements] = p_r[i];
-		r_i[k + i * num_elements] = p_i[i];
+	    /* Although the signal has imaginary parts somewhere, the
+	     * pointwise solutions may be real anywhere.
+	     */
+	    if (p_i) {
+		for (i = 0; i < M; i++)
+		{
+		    r_r[k + i * num_elements] = p_r[i];
+		    r_i[k + i * num_elements] = p_i[i];
+		}
+	    }
+	    else {
+		for (i = 0; i < M; i++) {
+		    r_r[k + i * num_elements] = p_r[i];
+		    r_i[k + i * num_elements] = 0.0;
+		}
 	    }
 	}
 

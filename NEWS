@@ -1,5 +1,7 @@
 2.1
 
+- Bugfix in polyexp_solve_system.c. Polyexp could crash under specific
+  circumstances with complex data and nonconstant certainty.
 - Changed functionality of tensorprod.m, NOT BACKWARDS COMPATIBLE!
 - New mex function tensorprodc.c.
 - New function outerprod to compute outer products of arrays.

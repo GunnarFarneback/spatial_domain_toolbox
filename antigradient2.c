@@ -4077,7 +4077,9 @@ mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   /* Then an optional mask. */
   argno = 1;
-  if (mxGetNumberOfElements(prhs[1]) > 1)
+  if (argno >= nrhs)
+    mask = NULL;
+  else if (mxGetNumberOfElements(prhs[1]) > 1)
   {
     if (!mxIsNumeric(prhs [1]) || mxIsComplex(prhs [1])
 	|| mxIsSparse(prhs [1]) || !mxIsDouble(prhs [1]))

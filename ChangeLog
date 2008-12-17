@@ -1,3 +1,15 @@
+2008-12-17  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* antigradient2.c: Bugfix in parameter parsing. Calling
+	antigradient2 with a single argument could cause crashing.
+	Thanks to Eran Ohel for reporting the problem and providing a
+	reproducible testcase.
+
+2007-02-15  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* polyexp_solve_system.c: Bugfix. The code could crash if complex
+	input somewhere gave real output.
+
 2006-10-12  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* Updated README.
