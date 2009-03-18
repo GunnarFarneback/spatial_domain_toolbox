@@ -695,7 +695,7 @@ upsample2D(int M, int N,
 	double sum;
 	
 	index1 = j * M + i;
-	index2 = ((j - 1) / 2) * Mhalf + (i - 1) / 2;
+	index2 = ((j + 1) / 2 - 1) * Mhalf + (i + 1) / 2 - 1;
 
 	if (weight[index1] == 0)
 	  continue;
@@ -745,7 +745,7 @@ upsample2D(int M, int N,
 	double sum;
 	
 	index1 = j * M + i;
-	index2 = ((j - 1) / 2) * Mhalf + i / 2;
+	index2 = ((j + 1) / 2 - 1) * Mhalf + i / 2;
 
 	if (weight[index1] == 0)
 	  continue;
@@ -795,7 +795,7 @@ upsample2D(int M, int N,
 	double sum;
 	
 	index1 = j * M + i;
-	index2 = (j / 2) * Mhalf + (i - 1) / 2;
+	index2 = (j / 2) * Mhalf + (i + 1) / 2 - 1;
 
 	if (weight[index1] == 0)
 	  continue;
@@ -3045,7 +3045,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = (((p - 1) / 2) * Nhalf + (j - 1) / 2) * Mhalf + (i - 1) / 2;
+          index2 = (((p + 1) / 2 - 1) * Nhalf + (j + 1) / 2 - 1) * Mhalf + (i + 1) / 2 - 1;
           
           if (weight[index1] == 0)
             continue;
@@ -3133,7 +3133,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = (((p - 1) / 2) * Nhalf + (j - 1) / 2) * Mhalf + i / 2;
+          index2 = (((p + 1) / 2 - 1) * Nhalf + (j + 1) / 2 - 1) * Mhalf + i / 2;
           
           if (weight[index1] == 0)
             continue;
@@ -3221,7 +3221,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = (((p - 1) / 2) * Nhalf + j / 2) * Mhalf + (i - 1) / 2;
+          index2 = (((p + 1) / 2 - 1) * Nhalf + j / 2) * Mhalf + (i + 1) / 2 - 1;
           
           if (weight[index1] == 0)
             continue;
@@ -3309,7 +3309,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = (((p - 1) / 2) * Nhalf + j / 2) * Mhalf + i / 2;
+          index2 = (((p + 1) / 2 - 1) * Nhalf + j / 2) * Mhalf + i / 2;
           
           if (weight[index1] == 0)
             continue;
@@ -3397,7 +3397,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = ((p / 2) * Nhalf + (j - 1) / 2) * Mhalf + (i - 1) / 2;
+          index2 = ((p / 2) * Nhalf + (j + 1) / 2 - 1) * Mhalf + (i + 1) / 2 - 1;
           
           if (weight[index1] == 0)
             continue;
@@ -3485,7 +3485,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = ((p / 2) * Nhalf + (j - 1) / 2) * Mhalf + i / 2;
+          index2 = ((p / 2) * Nhalf + (j + 1) / 2 - 1) * Mhalf + i / 2;
           
           if (weight[index1] == 0)
             continue;
@@ -3573,7 +3573,7 @@ upsample3D(int M, int N, int P,
           double sum;
           
           index1 = (p * N + j) * M + i;
-          index2 = ((p / 2) * Nhalf + j / 2) * Mhalf + (i - 1) / 2;
+          index2 = ((p / 2) * Nhalf + j / 2) * Mhalf + (i + 1) / 2 - 1;
           
           if (weight[index1] == 0)
             continue;

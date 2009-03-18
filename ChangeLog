@@ -1,3 +1,12 @@
+2009-03-18  Gunnar Farnebäck  <gunnar@imt.liu.se>
+
+	* antigradient2.c: Bugfix in upsample2D() and upsample3D(). The
+	construction (i - 1) / 2 in the computation of index2 does not
+	work as expected for the edge case i == 0 since integer division
+	rounds towards 0. Changing this to (i + 1) / 2 - 1 solves the
+	problem. This bug could cause numerical divergence for certain
+	mask shapes, causing the "solution" to numerically explode.
+
 2008-12-17  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
 	* antigradient2.c: Bugfix in parameter parsing. Calling
