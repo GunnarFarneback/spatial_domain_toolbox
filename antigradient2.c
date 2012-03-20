@@ -3069,25 +3069,25 @@ upsample3D(int M, int N, int P,
                  VAL(i > 0 && j > 0 && p > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(i > 0 && j > 0 && p < Phalf - 1,
+                 VAL(i > 0 && j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(i > 0 && j < Nhalf - 1 && p > 0,
+                 VAL(i > 0 && j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(i > 0 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i > 0 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j > 0 && p > 0,
+                 VAL(i < M - 1 && j > 0 && p > 0,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && j > 0 && p < Phalf - 1,
+                 VAL(i < M - 1 && j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p > 0,
+                 VAL(i < M - 1 && j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3157,25 +3157,25 @@ upsample3D(int M, int N, int P,
                  VAL(j > 0 && p > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(j > 0 && p < Phalf - 1,
+                 VAL(j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(j < Nhalf - 1 && p > 0,
+                 VAL(j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j > 0 && p > 0,
+                 VAL(i < M - 1 && j > 0 && p > 0,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && j > 0 && p < Phalf - 1,
+                 VAL(i < M - 1 && j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p > 0,
+                 VAL(i < M - 1 && j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3245,25 +3245,25 @@ upsample3D(int M, int N, int P,
                  VAL(i > 0 && p > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(i > 0 && p < Phalf - 1,
+                 VAL(i > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(i > 0 && j < Nhalf - 1 && p > 0,
+                 VAL(i > 0 && j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(i > 0 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i > 0 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && p > 0,
+                 VAL(i < M - 1 && p > 0,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p > 0,
+                 VAL(i < M - 1 && j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3333,25 +3333,25 @@ upsample3D(int M, int N, int P,
                  VAL(p > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(p < Phalf - 1,
+                 VAL(p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(j < Nhalf - 1 && p > 0,
+                 VAL(j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && p > 0,
+                 VAL(i < M - 1 && p > 0,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p > 0,
+                 VAL(i < M - 1 && j < N - 1 && p > 0,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3421,25 +3421,25 @@ upsample3D(int M, int N, int P,
                  VAL(i > 0 && j > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(i > 0 && j > 0 && p < Phalf - 1,
+                 VAL(i > 0 && j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(i > 0 && j < Nhalf - 1,
+                 VAL(i > 0 && j < N - 1,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(i > 0 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i > 0 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j > 0,
+                 VAL(i < M - 1 && j > 0,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && j > 0 && p < Phalf - 1,
+                 VAL(i < M - 1 && j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1,
+                 VAL(i < M - 1 && j < N - 1,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3509,25 +3509,25 @@ upsample3D(int M, int N, int P,
                  VAL(j > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(j > 0 && p < Phalf - 1,
+                 VAL(j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(j < Nhalf - 1,
+                 VAL(j < N - 1,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j > 0,
+                 VAL(i < M - 1 && j > 0,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && j > 0 && p < Phalf - 1,
+                 VAL(i < M - 1 && j > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1,
+                 VAL(i < M - 1 && j < N - 1,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3597,25 +3597,25 @@ upsample3D(int M, int N, int P,
                  VAL(i > 0,
                      coarse_weight[index2]));
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(i > 0 && p < Phalf - 1,
+                 VAL(i > 0 && p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(i > 0 && j < Nhalf - 1,
+                 VAL(i > 0 && j < N - 1,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(i > 0 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i > 0 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1,
+                 VAL(i < M - 1,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1,
+                 VAL(i < M - 1 && j < N - 1,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
@@ -3684,25 +3684,25 @@ upsample3D(int M, int N, int P,
           unw = ((1 - alpha1) * (1 - alpha2) * (1 - alpha3) *
                  coarse_weight[index2]);
           dnw = ((1 - alpha1) * (1 - alpha2) * alpha3 *
-                 VAL(p < Phalf - 1,
+                 VAL(p < P - 1,
                      coarse_weight[index2 + MNhalf]));
           une = ((1 - alpha1) * alpha2 * (1 - alpha3) *
-                 VAL(j < Nhalf - 1,
+                 VAL(j < N - 1,
                      coarse_weight[index2 + Mhalf]));
           dne = ((1 - alpha1) * alpha2 * alpha3 *
-                 VAL(j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf]));
           usw = (alpha1 * (1 - alpha2) * (1 - alpha3) *
-                 VAL(i < Mhalf - 1,
+                 VAL(i < M - 1,
                      coarse_weight[index2 + 1]));
           dsw = (alpha1 * (1 - alpha2) * alpha3 *
-                 VAL(i < Mhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + 1]));
           use = (alpha1 * alpha2 * (1 - alpha3) *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1,
+                 VAL(i < M - 1 && j < N - 1,
                      coarse_weight[index2 + Mhalf + 1]));
           dse = (alpha1 * alpha2 * alpha3 *
-                 VAL(i < Mhalf - 1 && j < Nhalf - 1 && p < Phalf - 1,
+                 VAL(i < M - 1 && j < N - 1 && p < P - 1,
                      coarse_weight[index2 + MNhalf + Mhalf + 1]));
           
           sum = unw + dnw + une + dne + usw + dsw + use + dse;
