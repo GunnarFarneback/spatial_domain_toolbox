@@ -1,5 +1,7 @@
 2012-03-20  Gunnar Farnebäck  <gunnar@imt.liu.se>
 
+	* antigradient2.c: Refactor computation of residuals.
+
 	* antigradient2.c: Bugfix in upsampled3D(). This could also cause
 	numerical divergence.
 

@@ -173,6 +173,50 @@ gauss_seidel2D(double *f, double *A, double *d, int M, int N)
   }
 }
 
+
+static void
+compute_residual2D(double *r, double *A, double *d, double *f, int M, int N)
+{
+  int i, j;
+
+  for (j = 0; j < N; j++)
+    for (i = 0; i < M; i++)
+      {
+      int index = j * M + i;
+      double residual = 0.0;
+      if (A[9 * index] != 0.0)
+      {
+	residual = d[index] - A[9 * index] * f[index];
+	if (i > 0)
+	  residual -= A[9 * index + 1] * f[index - 1];
+	
+	if (i < M-1)
+	  residual -= A[9 * index + 2] * f[index + 1];
+	
+	if (j > 0)
+	  residual -= A[9 * index + 3] * f[index - M];
+	
+	if (j < N-1)
+	  residual -= A[9 * index + 4] * f[index + M];
+	
+	if (i > 0 && j > 0)
+	  residual -= A[9 * index + 5] * f[index - 1 - M];
+	
+	if (i > 0 && j < N-1)
+	  residual -= A[9 * index + 6] * f[index - 1 + M];
+	
+	if (i < M-1 && j > 0)
+	  residual -= A[9 * index + 7] * f[index + 1 - M];
+	
+	if (i < M-1 && j < N-1)
+	  residual -= A[9 * index + 8] * f[index + 1 + M];
+      }
+      
+      r[index] = residual;
+    }
+}
+
+
 static void
 downsample2D(double *rhs, int M, int N,
 	     double *rhs_coarse, int Mhalf, int Nhalf,
@@ -894,7 +938,6 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
 		    double *f_out,
 		    int M, int N, int *directly_solved)
 {
-  int i, j;
   int k;
   double *r;
   double *r_downsampled;
@@ -922,41 +965,7 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
   
   /* Compute residual. */
   r = mxCalloc(M * N, sizeof(*r));
-  for (j = 0; j < N; j++)
-    for (i = 0; i < M; i++)
-    {
-      int index = j * M + i;
-      double residual = 0.0;
-      if (lhs[9 * index] != 0.0)
-      {
-	residual = rhs[index] - lhs[9 * index] * f_out[index];
-	if (i > 0)
-	  residual -= lhs[9 * index + 1] * f_out[index - 1];
-	
-	if (i < M-1)
-	  residual -= lhs[9 * index + 2] * f_out[index + 1];
-	
-	if (j > 0)
-	  residual -= lhs[9 * index + 3] * f_out[index - M];
-	
-	if (j < N-1)
-	  residual -= lhs[9 * index + 4] * f_out[index + M];
-	
-	if (i > 0 && j > 0)
-	  residual -= lhs[9 * index + 5] * f_out[index - 1 - M];
-	
-	if (i > 0 && j < N-1)
-	  residual -= lhs[9 * index + 6] * f_out[index - 1 + M];
-	
-	if (i < M-1 && j > 0)
-	  residual -= lhs[9 * index + 7] * f_out[index + 1 - M];
-	
-	if (i < M-1 && j < N-1)
-	  residual -= lhs[9 * index + 8] * f_out[index + 1 + M];
-      }
-      
-      r[index] = residual;
-    }
+  compute_residual2D(r, lhs, rhs, f_out, M, N);
 
   /* Downsample residual. */
   Mhalf = (M + 1) / 2;
@@ -993,6 +1002,7 @@ poisson_multigrid2D(double *f, int level, double *rhs, double *weight,
     double sum = 0.0;
     int num_samples_in_mask = 0;
     double mean;
+    int i;
     
     for (i = 0; i < M * N; i++)
       if (weight[i] != 0)
@@ -1295,6 +1305,38 @@ gauss_seidel3D(double *f, double *A, double *d, int M, int N, int P)
   }
 }
 
+
+static void
+compute_residual3D(double *r, double *A, double *d, double *f,
+                   int M, int N, int P)
+{
+  int i, j, p;
+  int MN = M * N;
+
+  for (p = 0; p < P; p++)
+    for (j = 0; j < N; j++)
+      for (i = 0; i < M; i++)
+      {
+	int index = (p * N + j) * M + i;
+	double residual = 0;
+	if (A[27 * index + 13] != 0)
+	{
+	  int k;
+	  residual = d[index];
+	  for (k = 0; k < 27; k++)
+	  {
+	    int u = (k % 3) - 1;
+	    int v = ((k / 3) % 3) - 1;
+	    int w = ((k / 9) % 3) - 1;
+
+	    if (A[27 * index + k] != 0)
+	      residual -= A[27 * index + k] * f[index + u + v * M + w * MN];
+	  }
+	}
+
+	r[index] = residual;
+      }
+}
 
 static void
 downsample3D(double *rhs, int M, int N, int P,
@@ -3744,7 +3786,6 @@ poisson_multigrid3D(int level, double *rhs, double *weight,
 		    double *f_out,
 		    int M, int N, int P, int *directly_solved)
 {
-  int i, j, p;
   int k;
   double *r;
   double *r_downsampled;
@@ -3773,30 +3814,7 @@ poisson_multigrid3D(int level, double *rhs, double *weight,
   
   /* Compute residual. */
   r = mxCalloc(M * N * P, sizeof(*r));
-  for (p = 0; p < P; p++)
-    for (j = 0; j < N; j++)
-      for (i = 0; i < M; i++)
-      {
-	int index = (p * N + j) * M + i;
-	double residual = 0;
-	if (lhs[27 * index + 13] != 0)
-	{
-	  int k;
-	  residual = rhs[index];
-	  for (k = 0; k < 27; k++)
-	  {
-	    int u = (k % 3) - 1;
-	    int v = ((k / 3) % 3) - 1;
-	    int w = ((k / 9) % 3) - 1;
-
-	    if (lhs[27 * index + k] != 0)
-	      residual -= lhs[27 * index + k] * f_out[index + u + v * M
-						      + w * MN];
-	  }
-	}
-
-	r[index] = residual;
-      }
+  compute_residual3D(r, lhs, rhs, f_out, M, N, P);
   
   /* Downsample residual. */
   Mhalf = (M + 1) / 2;
@@ -3835,6 +3853,7 @@ poisson_multigrid3D(int level, double *rhs, double *weight,
     double sum = 0.0;
     int num_samples_in_mask = 0;
     double mean;
+    int i;
     
     for (i = 0; i < M * N * P; i++)
       if (weight[i] != 0)
