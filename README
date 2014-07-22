@@ -1,6 +1,6 @@
 			 General Information
 
-This is spatial_domain_toolbox-2.1, a collection of matlab functions
+This is spatial_domain_toolbox, a collection of matlab functions
 and scripts written by Gunnar Farnebäck. Originally this contained
 implementations of some of the algorithms described in his Ph.D. thesis
 "Polynomial Expansion for Orientation and Motion Estimation" but has
@@ -10,30 +10,15 @@ and used directly in the spatial (or spatiotemporal) domain, without
 involving e.g. Fourier or wavelet transforms. Some functions even more
 generally apply to  multidimensional arrays. 
 
-Download instructions for the latest version should always be
-available at http://www.imt.liu.se/mi/tools/.
+Download instructions for the latest version should be available at
+http://www.imt.liu.se/mi/tools/.
 
-Author is Gunnar Farnebäck, gunnar@imt.liu.se.
-
-
-			 News in Version 2.1
-
-* New general function neighborhoodloop.
-* Significantly improved function tensorprod (but see next section!).
-* New general function outerprod.
-* Significant improvements of arrayloop.
-* New function antigradient for reconstruction from gradients.
-* Bugfixes.
-
-See the file NEWS for details and older news.
+Author is Gunnar Farnebäck, gunnar@lysator.liu.se.
 
 
-		   Important Notice for Version 2.1
+				 News
 
-The function tensorprod has been changed in a way that is not
-backwards compatible. If you have used the old tensorprod you need to
-update your code for the new definition or if appropriate convert to
-the new function outerprod.
+See the files NEWS and ChangeLog.
 
 
 			       License
@@ -54,9 +39,9 @@ installed. The toolbox has been tested with Matlab 7.
 
 			     Installation
 
-Untar the archive and copy all files to a directory where Matlab can
-find them. You also need to compile the C mex files. This is most
-easily done by running the following code in the toolbox directory:
+Clone the repository and add the directory to the Matlab search path.
+You also need to compile the C mex files. This is most easily done by
+running the following code in the toolbox directory:
 
 files = dir();
 for name = {files.name}
@@ -72,27 +57,30 @@ end
 The Ph.D. thesis, as well as a number of related papers, can be
 found at either of these pages:
 
-http://www.isy.liu.se/~gf/publications.html
 http://lmi.bwh.harvard.edu/papers/gunnar.html
-http://www.imt.liu.se/mi/Publications/gunnar.html
+https://www.researchgate.net/profile/Gunnar_Farnebaeck
+http://www2.cvl.isy.liu.se/ScOut/Theses/PaperInfo/farneback02.html
+http://www.diva-portal.org/smash/get/diva2:273847/FULLTEXT01.pdf
 
 
 			 Further Development
 
-New algorithms and functions are added from time to time. Development
-versions are available in a subversion repository at
-http://lsvn.lysator.liu.se/svnroot/spatial_domain_toolbox/trunk.
-This is best accessed using a subversion client, see 
-http://subversion.tigris.org, but a common web browser can also be
-used to access the most recent versions of the files.
+At this point it is unlikely that more new algorithms or functions
+will be added. Bugfixes may still appear.
+Development versions are available at GitHub,
+https://github.com/GunnarFarneback/spatial_domain_toolbox
+
+The previously used subversion repository at
+http://lsvn.lysator.liu.se/svnroot/spatial_domain_toolbox/trunk
+has been closed.
 
 
 			     Bug Reports
 
 Please send bug reports, bug fixes, improvements, and success stories
-to the author at gunnar@imt.liu.se. The toolbox is of course provided as
-is, no warranty, etc.
+to the author at gunnar@lysator.liu.se. The toolbox is of course
+provided as is, no warranty, etc.
 
 
-Linköping 2006-10-12
+Linköping 2014-07-22
 Gunnar Farnebäck

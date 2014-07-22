@@ -1,4 +1,4 @@
-2.1
+2.1 (under development, not released)
 
 - Bugfix in polyexp_solve_system.c. Polyexp could crash under specific
   circumstances with complex data and nonconstant certainty.
@@ -10,6 +10,8 @@
   callback function.
 - New function antigradient to reconstruct a function from its
   possibly noisy gradients.
+- New function antigradient2, generalizing antigradient to irregular
+  domains.
 - Bugfixes in arrayloop.c.
 - Function handles and inline functions can be used in arrayloop.
 - Complex input can be used in arrayloop.
