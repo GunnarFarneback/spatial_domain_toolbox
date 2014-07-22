@@ -306,7 +306,7 @@ upsample2D(double *rhs, int M, int N,
 {
   int i, j;
   int index1, index2;
-  double ce, no, so, we, ea, nw, sw, ne, se;
+  int ce, no, so, we, ea, nw, sw, ne, se;
   int CE, NO, SO, WE, EA, SW, NE, SE;
   
   if (M % 2 == 0 && N % 2 == 0)
@@ -316,15 +316,15 @@ upsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	no = v[index1 - 1];
-	so = v[index1 + 1];
-	we = v[index1 - Mhalf];
-	ea = v[index1 + Mhalf];
-	nw = v[index1 - Mhalf - 1];
-	sw = v[index1 - Mhalf + 1];
-	ne = v[index1 + Mhalf - 1];
-	se = v[index1 + Mhalf + 1];
+	ce = index1;
+	no = index1 - 1;
+	so = index1 + 1;
+	we = index1 - Mhalf;
+	ea = index1 + Mhalf;
+	nw = index1 - Mhalf - 1;
+	sw = index1 - Mhalf + 1;
+	ne = index1 + Mhalf - 1;
+	se = index1 + Mhalf + 1;
 	CE = index2;
 	SO = index2 + 1;
 	EA = index2 + M;
@@ -334,64 +334,64 @@ upsample2D(double *rhs, int M, int N,
 	if (i == 0)
 	{
 	  if (j == 0) /* NW corner. */
-	    f_out[CE] += ce - 0.25 * rhs[CE];
+	    f_out[CE] += v[ce] - 0.25 * rhs[CE];
 	  else        /* North edge. */
-	    f_out[CE] += 0.75 * ce + 0.25 * (we - rhs[CE]);
+	    f_out[CE] += 0.75 * v[ce] + 0.25 * (v[we] - rhs[CE]);
 	}
 	else
 	{
 	  if (j == 0) /* West edge. */
-	    f_out[CE] += 0.75 * ce + 0.25 * (no - rhs[CE]);
+	    f_out[CE] += 0.75 * v[ce] + 0.25 * (v[no] - rhs[CE]);
 	  else        /* Inner point. */
-	    f_out[CE] += (0.5625 * ce + 0.1875 * (no + we) + 0.0625 * nw);
+	    f_out[CE] += (0.5625 * v[ce] + 0.1875 * (v[no] + v[we]) + 0.0625 * v[nw]);
 	}
 	
 	/* Fine pixels southwest of coarse pixel center. */
 	if (i == Mhalf - 1)
 	{
 	  if (j == 0) /* SW corner. */
-	    f_out[SO] += ce - 0.25 * rhs[SO];
+	    f_out[SO] += v[ce] - 0.25 * rhs[SO];
 	  else        /* South edge. */
-	    f_out[SO] += 0.75 * ce  + 0.25 * (we - rhs[SO]);
+	    f_out[SO] += 0.75 * v[ce]  + 0.25 * (v[we] - rhs[SO]);
 	}
 	else
 	{
 	  if (j == 0) /* West edge. */
-	    f_out[SO] += 0.75 * ce + 0.25 * (so - rhs[SO]);
+	    f_out[SO] += 0.75 * v[ce] + 0.25 * (v[so] - rhs[SO]);
 	  else        /* Inner point. */
-	    f_out[SO] += 0.5625 * ce + 0.1875 * (so + we) + 0.0625 * sw;
+	    f_out[SO] += 0.5625 * v[ce] + 0.1875 * (v[so] + v[we]) + 0.0625 * v[sw];
 	}
 	
 	/* Fine pixels northeast of coarse pixel center. */
 	if (i == 0)
 	{
 	  if (j == Nhalf - 1) /* NE corner. */
-	    f_out[EA] += ce - 0.25 * rhs[EA];
+	    f_out[EA] += v[ce] - 0.25 * rhs[EA];
 	  else              /* North edge. */
-	    f_out[EA] += 0.75 * ce + 0.25 * (ea - rhs[EA]);
+	    f_out[EA] += 0.75 * v[ce] + 0.25 * (v[ea] - rhs[EA]);
 	}
 	else
 	{
 	  if (j == Nhalf - 1) /* East edge. */
-	    f_out[EA] += 0.75 * ce + 0.25 * (no - rhs[EA]);
+	    f_out[EA] += 0.75 * v[ce] + 0.25 * (v[no] - rhs[EA]);
 	  else              /* Inner point. */
-	    f_out[EA] += 0.5625 * ce + 0.1875 * (no + ea) + 0.0625 * ne;
+	    f_out[EA] += 0.5625 * v[ce] + 0.1875 * (v[no] + v[ea]) + 0.0625 * v[ne];
 	}
 	
 	/* Fine pixels southeast of coarse pixel center. */
 	if (i == Mhalf - 1)
 	{
 	  if (j == Nhalf - 1) /* SE corner. */
-	    f_out[SE] += ce - 0.25 * rhs[SE];
+	    f_out[SE] += v[ce] - 0.25 * rhs[SE];
 	  else              /* South edge.*/
-	    f_out[SE] += 0.75 * ce + 0.25 * (ea - rhs[SE]);
+	    f_out[SE] += 0.75 * v[ce] + 0.25 * (v[ea] - rhs[SE]);
 	}
 	else
 	{
 	  if (j == Nhalf - 1) /* East edge. */
-	    f_out[SE] += 0.75 * ce + 0.25 * (so - rhs[SE]);
+	    f_out[SE] += 0.75 * v[ce] + 0.25 * (v[so] - rhs[SE]);
 	  else              /* Inner point. */
-	    f_out[SE] += 0.5625 * ce + 0.1875 * (so + ea) + 0.0625 * se;
+	    f_out[SE] += 0.5625 * v[ce] + 0.1875 * (v[so] + v[ea]) + 0.0625 * v[se];
 	}
       }
   }
@@ -403,12 +403,12 @@ upsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	so = v[index1 + 1];
-	we = v[index1 - Mhalf];
-	ea = v[index1 + Mhalf];
-	sw = v[index1 - Mhalf + 1];
-	se = v[index1 + Mhalf + 1];
+	ce = index1;
+	so = index1 + 1;
+	we = index1 - Mhalf;
+	ea = index1 + Mhalf;
+	sw = index1 - Mhalf + 1;
+	se = index1 + Mhalf + 1;
 	CE = index2;
 	SO = index2 + 1;
 	EA = index2 + M;
@@ -420,44 +420,44 @@ upsample2D(double *rhs, int M, int N,
 	if (j == 0) /* West edge. */
 	{
 	  if (i == 0) /* NW corner */
-	    f_out[CE] += ce - 0.125 * (rhs[SO] + rhs[CE] - rhs[EA]);
+	    f_out[CE] += v[ce] - 0.125 * (rhs[SO] + rhs[CE] - rhs[EA]);
 	  else if (i == Mhalf - 1) /* SW corner */
-	    f_out[CE] += ce - 0.125 * (rhs[NO] + rhs[CE] - rhs[EA]);
+	    f_out[CE] += v[ce] - 0.125 * (rhs[NO] + rhs[CE] - rhs[EA]);
 	  else
-	    f_out[CE] += ce - 0.25 * rhs[CE];
+	    f_out[CE] += v[ce] - 0.25 * rhs[CE];
 	}
 	else        /* Inner point. */
-	  f_out[CE] += 0.75 * ce + 0.25 * we;
+	  f_out[CE] += 0.75 * v[ce] + 0.25 * v[we];
 	
 	/* Fine pixels southsouthwest of coarse pixel center. */
 	if (i < Mhalf - 1)
 	{
 	  if (j == 0) /* West edge. */
-	    f_out[SO] += 0.5 * (ce + so) - 0.25 * rhs[SO];
+	    f_out[SO] += 0.5 * (v[ce] + v[so]) - 0.25 * rhs[SO];
 	  else        /* Inner point. */
-	    f_out[SO] += 0.375 * (ce + so) + 0.125 * (we + sw);
+	    f_out[SO] += 0.375 * (v[ce] + v[so]) + 0.125 * (v[we] + v[sw]);
 	}
 	
 	/* Fine pixels east of coarse pixel center. */
 	if (j == Nhalf - 1) /* East edge. */
 	{
 	  if (i == 0) /* NE corner */
-	    f_out[EA] += ce - 0.125 * (rhs[SE] + rhs[EA] - rhs[CE]);
+	    f_out[EA] += v[ce] - 0.125 * (rhs[SE] + rhs[EA] - rhs[CE]);
 	  else if (i == Mhalf - 1) /* SE corner */
-	    f_out[EA] += ce - 0.125 * (rhs[NE] + rhs[EA] - rhs[CE]);
+	    f_out[EA] += v[ce] - 0.125 * (rhs[NE] + rhs[EA] - rhs[CE]);
 	  else
-	    f_out[EA] += ce - 0.25 * rhs[EA];
+	    f_out[EA] += v[ce] - 0.25 * rhs[EA];
 	}
 	else          /* Inner point. */
-	  f_out[EA] += 0.75 * ce + 0.25 * ea;
+	  f_out[EA] += 0.75 * v[ce] + 0.25 * v[ea];
 	
 	/* Fine pixels southsoutheast of coarse pixel center. */
 	if (i < Mhalf - 1)
 	{
 	  if (j == Nhalf - 1) /* East edge. */
-	    f_out[SE] += 0.5 * (ce + so) - 0.25 * rhs[SE];
+	    f_out[SE] += 0.5 * (v[ce] + v[so]) - 0.25 * rhs[SE];
 	  else                /* Inner point. */
-	    f_out[SE] += 0.375 * (ce + so) + 0.125 * (ea + se);
+	    f_out[SE] += 0.375 * (v[ce] + v[so]) + 0.125 * (v[ea] + v[se]);
 	}
       }
   }
@@ -469,12 +469,12 @@ upsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	so = v[index1 + 1];
-	no = v[index1 - 1];
-	ea = v[index1 + Mhalf];
-	se = v[index1 + Mhalf + 1];
-	ne = v[index1 + Mhalf - 1];
+	ce = index1;
+	so = index1 + 1;
+	no = index1 - 1;
+	ea = index1 + Mhalf;
+	se = index1 + Mhalf + 1;
+	ne = index1 + Mhalf - 1;
 	CE = index2;
 	SO = index2 + 1;
 	EA = index2 + M;
@@ -486,44 +486,44 @@ upsample2D(double *rhs, int M, int N,
 	if (i == 0) /* North edge. */
 	{
 	  if (j == 0) /* NW corner */
-	    f_out[CE] += ce - 0.125 * (rhs[EA] + rhs[CE] - rhs[SO]);
+	    f_out[CE] += v[ce] - 0.125 * (rhs[EA] + rhs[CE] - rhs[SO]);
 	  else if (j == Nhalf - 1) /* NE corner */
-	    f_out[CE] += ce - 0.125 * (rhs[WE] + rhs[CE] - rhs[SO]);
+	    f_out[CE] += v[ce] - 0.125 * (rhs[WE] + rhs[CE] - rhs[SO]);
 	  else
-	    f_out[CE] += ce - 0.25 * rhs[CE];
+	    f_out[CE] += v[ce] - 0.25 * rhs[CE];
 	}
 	else        /* Inner point. */
-	  f_out[CE] += 0.75 * ce + 0.25 * no;
+	  f_out[CE] += 0.75 * v[ce] + 0.25 * v[no];
 	
 	/* Fine pixels eastnortheast of coarse pixel center. */
 	if (j < Nhalf - 1)
 	{
 	  if (i == 0) /* North edge. */
-	    f_out[EA] += 0.5 * (ce + ea) - 0.25 * rhs[EA];
+	    f_out[EA] += 0.5 * (v[ce] + v[ea]) - 0.25 * rhs[EA];
 	  else        /* Inner point. */
-	    f_out[EA] += 0.375 * (ce + ea) + 0.125 * (no + ne);
+	    f_out[EA] += 0.375 * (v[ce] + v[ea]) + 0.125 * (v[no] + v[ne]);
 	}
 	
 	/* Fine pixels south of coarse pixel center. */
 	if (i == Mhalf - 1) /* South edge. */
 	{
 	  if (j == 0) /* SW corner */
-	    f_out[SO] += ce - 0.125 * (rhs[SE] + rhs[SO] - rhs[CE]);
+	    f_out[SO] += v[ce] - 0.125 * (rhs[SE] + rhs[SO] - rhs[CE]);
 	  else if (j == Nhalf - 1) /* SE corner */
-	    f_out[SO] += ce - 0.125 * (rhs[SW] + rhs[SO] - rhs[CE]);
+	    f_out[SO] += v[ce] - 0.125 * (rhs[SW] + rhs[SO] - rhs[CE]);
 	  else
-	    f_out[SO] += ce - 0.25 * rhs[SO];
+	    f_out[SO] += v[ce] - 0.25 * rhs[SO];
 	}
 	else          /* Inner point. */
-	  f_out[SO] += 0.75 * ce + 0.25 * so;
+	  f_out[SO] += 0.75 * v[ce] + 0.25 * v[so];
 	
 	/* Fine pixels eastsoutheast of coarse pixel center. */
 	if (j < Nhalf - 1)
 	{
 	  if (i == Mhalf - 1) /* South edge. */
-	    f_out[SE] += 0.5 * (ce + ea) - 0.25 * rhs[SE];
+	    f_out[SE] += 0.5 * (v[ce] + v[ea]) - 0.25 * rhs[SE];
 	  else                /* Inner point. */
-	    f_out[SE] += 0.375 * (ce + ea) + 0.125 * (so + se);
+	    f_out[SE] += 0.375 * (v[ce] + v[ea]) + 0.125 * (v[so] + v[se]);
 	}
       }
   }
@@ -535,29 +535,29 @@ upsample2D(double *rhs, int M, int N,
       {
 	index1 = (j * Mhalf + i);
 	index2 = (2 * j * M + 2 * i);
-	ce = v[index1];
-	so = v[index1 + 1];
-	ea = v[index1 + Mhalf];
-	se = v[index1 + Mhalf + 1];
+	ce = index1;
+	so = index1 + 1;
+	ea = index1 + Mhalf;
+	se = index1 + Mhalf + 1;
 	CE = index2;
 	SO = index2 + 1;
 	EA = index2 + M;
 	SE = index2 + M + 1;
 	
 	/* Fine pixels on coarse pixel center. */
-	f_out[CE] += ce;
+	f_out[CE] += v[ce];
 	
 	/* Fine pixels south of coarse pixel center. */
 	if (i < Mhalf - 1)
-	  f_out[SO] += 0.5 * (ce + so);
+	  f_out[SO] += 0.5 * (v[ce] + v[so]);
 	
 	/* Fine pixels east of coarse pixel center. */
 	if (j < Nhalf - 1) /* South edge. */
-	  f_out[EA] += 0.5 * (ce + ea);
+	  f_out[EA] += 0.5 * (v[ce] + v[ea]);
 	
 	/* Fine pixels southeast of coarse pixel center. */
 	if (i < Mhalf - 1 && j < Nhalf - 1)
-	  f_out[SE] += 0.25 * (ce + ea + so + se);
+	  f_out[SE] += 0.25 * (v[ce] + v[ea] + v[so] + v[se]);
       }
   }
 }
